@@ -2,56 +2,111 @@
 <html lang="th">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Practika Flood Risk & Safe Routes</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+  <meta name="theme-color" content="#0f2742">
+  <title>Practika Flood Intelligence</title>
   <link href="https://unpkg.com/maplibre-gl@5/dist/maplibre-gl.css" rel="stylesheet">
   <link href="./styles.css" rel="stylesheet">
 </head>
 <body>
   <div id="map"></div>
+  <button id="panelToggle" class="panel-toggle" type="button" aria-label="เปิดหรือย่อแผงข้อมูล">☰</button>
   <div id="loadingOverlay" class="loading-overlay">
     <div class="loading-card">
-      <div id="loadingText">Loading map data… 0%</div>
+      <div class="loading-brand">PRACTIKA FLOOD INTELLIGENCE</div>
+      <div id="loadingText">กำลังโหลดข้อมูลแผนที่… 0%</div>
       <div class="progress-track"><div id="loadingBar" class="progress-bar"></div></div>
-      <div id="loadingDetail" class="loading-detail">Preparing map</div>
+      <div id="loadingDetail" class="loading-detail">Preparing trusted GIS layers</div>
     </div>
   </div>
-  <aside class="panel">
-    <h1>Practika Flood Map</h1>
-    <div class="sub">MapLibre + OpenStreetMap · no Google Maps API</div>
-    <div id="lastUpdated" class="updated">Data update: loading…</div>
-    <div class="legend">
-      <div><span class="swatch safe"></span>Safe</div>
-      <div><span class="swatch caution"></span>Caution</div>
-      <div><span class="swatch flooded"></span>Flooded / Closure</div>
-      <div><span class="swatch route"></span>Calculated route</div>
-      <div><span class="area-swatch canal-overflow"></span>Canal overflow impact</div>
-      <div><span class="area-swatch canal-watch"></span>Canal watch</div>
-      <div><span class="area-swatch hokwa"></span>Hok Wa confirmed overflow</div>
+  <aside id="controlPanel" class="panel">
+    <header class="panel-header">
+      <div>
+        <div class="eyebrow">PRACTIKA · FLOOD INTELLIGENCE</div>
+        <h1>สถานการณ์น้ำ & เส้นทาง</h1>
+        <div class="sub">Bangkok operational map · read-only public view</div>
+      </div>
+      <button id="panelClose" class="icon-btn" type="button" aria-label="ย่อแผง">−</button>
+    </header>
+    <div class="status-row">
+      <span class="status-chip live"><span class="pulse"></span>Published snapshot</span>
+      <span id="lastUpdated" class="updated">กำลังอ่านเวลาอัปเดต…</span>
     </div>
-    <label><input type="checkbox" data-layer="canalmaster" checked> คลองหลัก กทม. Master</label>
-    <label><input type="checkbox" data-layer="road" checked> ถนนหลัก / สถานะเส้นทาง</label>
-    <label><input type="checkbox" data-layer="liveflood" checked> น้ำท่วมถนน Live DDS</label>
-    <label><input type="checkbox" data-layer="soi" checked> ซอย / Hyperlocal</label>
-    <label><input type="checkbox" data-layer="sensor" checked> จุดตรวจวัด / รายงาน (Point)</label>
-    <label><input type="checkbox" data-layer="flood" checked> พื้นที่น้ำท่วม (Polygon)</label>
-    <label><input type="checkbox" data-layer="closure" checked> ถนนปิด (ยืนยันแล้วเท่านั้น)</label>
-    <label><input type="checkbox" data-layer="watercontrol" checked> เขื่อน / ประตูระบายน้ำ</label>
-    <label><input type="checkbox" data-layer="riverflow" checked> ปริมาณน้ำในแม่น้ำ</label>
-    <label><input type="checkbox" data-layer="canal" checked> แนวคลอง / แม่น้ำ Impact Area</label>
-    <label><input type="checkbox" data-layer="hokwa" checked> คลองหกวาสายล่าง Overflow Area</label>
-    <div class="refresh-tools">
-      <button id="refreshDataBtn" type="button">Reload Latest Published Data</button>
+    <section class="kpi-grid">
+      <div class="kpi critical"><b id="kpiFloodRoads">—</b><span>จุดน้ำท่วมถนน</span></div>
+      <div class="kpi water"><b id="kpiGates">—</b><span>ประตูระบายน้ำ</span></div>
+      <div class="kpi warning"><b id="kpiCorridors">—</b><span>แนวคลองเสี่ยง</span></div>
+      <div class="kpi neutral"><b id="kpiClosures">—</b><span>ถนนปิดยืนยัน</span></div>
+    </section>
+    <section class="legend-card">
+      <div class="section-title">สถานะที่ต้องมองก่อน</div>
+      <div class="legend-grid">
+        <div><span class="line-swatch safe"></span><span>ผ่านได้ / Safe</span></div>
+        <div><span class="line-swatch caution"></span><span>ระวัง / Caution</span></div>
+        <div><span class="dot-swatch flooded"></span><span>น้ำท่วมถนน</span></div>
+        <div><span class="line-swatch closure"></span><span>ปิดถนนยืนยัน</span></div>
+        <div><span class="area-swatch confirmed"></span><span>Confirmed</span></div>
+        <div><span class="area-swatch derived"></span><span>Derived</span></div>
+        <div><span class="area-swatch watch"></span><span>Watch</span></div>
+        <div><span class="line-swatch route"></span><span>Calculated route</span></div>
+      </div>
+    </section>
+
+    <details class="layer-group" open>
+      <summary><span>สถานการณ์ปัจจุบัน</span><span class="summary-hint">Priority</span></summary>
+      <div class="layer-list">
+        <label><input type="checkbox" data-layer="liveflood" checked><span>น้ำท่วมถนน Live DDS</span><i class="tag red">LIVE</i></label>
+        <label><input type="checkbox" data-layer="flood" checked><span>พื้นที่น้ำท่วม / Impact Area</span><i class="tag orange">AREA</i></label>
+        <label><input type="checkbox" data-layer="closure" checked><span>ถนนปิด (ยืนยันแล้วเท่านั้น)</span><i class="tag red">CONFIRMED</i></label>
+        <label><input type="checkbox" data-layer="hokwa" checked><span>คลองหกวาสายล่าง Overflow</span><i class="tag red">OVERFLOW</i></label>
+        <label><input type="checkbox" data-layer="canal" checked><span>แนวคลอง Impact / Watch</span><i class="tag amber">RISK</i></label>
+      </div>
+    </details>
+
+    <details class="layer-group" open>
+      <summary><span>น้ำและโครงสร้างระบายน้ำ</span><span class="summary-hint">Hydro</span></summary>
+      <div class="layer-list">
+        <label><input type="checkbox" data-layer="watercontrol" checked><span>ประตูระบายน้ำ / Water level</span><i class="tag blue">WL</i></label>
+        <label><input type="checkbox" data-layer="riverflow" checked><span>Flow / ปริมาณน้ำ</span><i class="tag blue">Q</i></label>
+        <label><input type="checkbox" data-layer="canalmaster"><span>คลองหลัก กทม. Master</span><i class="tag slate">REF</i></label>
+      </div>
+    </details>
+
+    <details class="layer-group">
+      <summary><span>ชั้นข้อมูลอ้างอิง</span><span class="summary-hint">Reference</span></summary>
+      <div class="layer-list">
+        <label><input type="checkbox" data-layer="road" checked><span>ถนนหลัก / สถานะเส้นทาง</span></label>
+        <label><input type="checkbox" data-layer="soi"><span>ซอย / Hyperlocal</span></label>
+        <label><input type="checkbox" data-layer="sensor"><span>จุดตรวจวัด / รายงาน</span></label>
+      </div>
+    </details>
+
+    <section class="route-card">
+      <div class="section-title">Route risk assessment</div>
+      <div class="route-actions">
+        <button id="routeModeBtn" type="button">เลือกต้นทาง–ปลายทาง</button>
+        <button id="routeClearBtn" class="secondary" type="button">ล้าง</button>
+      </div>
+      <div id="routeStatus" class="route-status">เปิด Route mode แล้วคลิกต้นทางและปลายทางบนแผนที่</div>
+      <div class="micro-note">เส้นทางเป็น risk assessment จาก OSRM ไม่ใช่ flood-avoidance guarantee</div>
+    </section>
+
+    <footer class="panel-footer">
+      <button id="refreshDataBtn" type="button" class="refresh-btn">↻ Reload latest published data</button>
       <span id="refreshState"></span>
-    </div>
-    <div class="route-tools">
-      <button id="routeModeBtn" type="button">Route mode</button>
-      <button id="routeClearBtn" type="button">Clear</button>
-      <div id="routeStatus" class="route-status">คลิก Route mode แล้วเลือกต้นทางและปลายทาง</div>
-    </div>
-    <div class="hydro-note">Trend: ↑ เพิ่ม · ↓ ลด · → ทรงตัว | พื้นที่น้ำท่วมใช้ Polygon เท่านั้น</div>
-    <div id="stats" class="stats">Loading…</div>
+      <div class="trust-note"><b>Data trust:</b> Official BMA/DDS + derived GIS layers. Derived areas are not surveyed inundation boundaries.</div>
+      <div id="stats" class="stats">Loading…</div>
+    </footer>
   </aside>
+
+  <div class="map-badge">
+    <span class="badge-title">Observed</span> จุด/ค่าที่รายงานจริง
+    <span class="badge-sep">·</span>
+    <span class="badge-title">Derived</span> พื้นที่วิเคราะห์
+    <span class="badge-sep">·</span>
+    <span class="badge-title">Watch</span> เฝ้าระวัง
+  </div>
+
   <script src="https://unpkg.com/maplibre-gl@5/dist/maplibre-gl.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@turf/turf@7/turf.min.js"></script>
   <script src="./app.js"></script>

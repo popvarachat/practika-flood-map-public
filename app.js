@@ -16,7 +16,12 @@ const map = new maplibregl.Map({
         attribution: "© OpenStreetMap contributors"
       }
     },
-    layers: [{ id: "osm", type: "raster", source: "osm" }]
+    layers: [{ id: "osm", type: "raster", source: "osm", paint:{
+      "raster-opacity":0.86,
+      "raster-saturation":-0.22,
+      "raster-brightness-max":0.96,
+      "raster-contrast":-0.06
+    }}]
   },
   center: [100.65, 13.92],
   zoom: 10
@@ -85,21 +90,22 @@ function popupHtml(feature) {
   const p=feature.properties || {};
   const name=p.name || p.canal_name || "Unnamed";
   if(p.closure_confirmed===false && "depth_cm" in p) {
-    return "<b>"+name+"</b>"+
-      "<br>ถนน: "+(p.road||"n/a")+
-      "<br>เขต: "+(p.district||"n/a")+
-      "<br>ระดับน้ำ: "+fmtNumber(p.depth_cm,1)+" cm"+
-      "<br>Peak: "+fmtNumber(p.peak_cm,1)+" cm"+
-      "<br>สถานะ: "+(p.status||"n/a")+
-      "<br>เวลา: "+(p.observed_at||"n/a")+
-      "<br><i>น้ำท่วมถนนปัจจุบัน ไม่เท่ากับประกาศปิดถนน</i>";
+    const cls=p.status==="critical"?"danger":"warn";
+    return '<div class="gis-popup"><div class="pop-head">'+name+'</div><div class="pop-body">'+
+      '<div class="'+cls+'">ระดับน้ำ '+fmtNumber(p.depth_cm,1)+' cm</div>'+
+      '<div>ถนน: '+(p.road||"n/a")+'</div>'+
+      '<div>เขต: '+(p.district||"n/a")+'</div>'+
+      '<div>Peak: '+fmtNumber(p.peak_cm,1)+' cm</div>'+
+      '<div>สถานะ: '+(p.status||"n/a")+'</div>'+
+      '<div class="muted">เวลา: '+(p.observed_at||"n/a")+'</div>'+
+      '<div class="muted">หมายเหตุ: มีน้ำท่วมถนน ≠ ประกาศปิดถนน</div></div></div>';
   }
   if(p.canal_name) {
-    return "<b>"+p.canal_name+"</b>"+
-      "<br>สถานะ: "+(p.risk_status||"monitor")+
-      "<br>จาก: "+(p.from_des||"n/a")+" → "+(p.to_des||"n/a")+
-      "<br>หลักฐาน: "+(p.evidence||"n/a")+
-      "<br>วันที่สถานะ: "+(p.status_date||"n/a");
+    return '<div class="gis-popup"><div class="pop-head">'+p.canal_name+'</div><div class="pop-body">'+
+      '<div><b>สถานะ:</b> '+(p.risk_status||"monitor")+'</div>'+
+      '<div>จาก: '+(p.from_des||"n/a")+' → '+(p.to_des||"n/a")+'</div>'+
+      '<div>หลักฐาน: '+(p.evidence||"n/a")+'</div>'+
+      '<div class="muted">วันที่สถานะ: '+(p.status_date||"n/a")+'</div></div></div>';
   }
   if(p.id_flood) {
     const level = p.water_level_m==null ? "N/A" : fmtNumber(p.water_level_m,2)+" m MSL "+trendArrow(p.water_level_trend)+" "+signed(p.water_level_delta_m,2)+" m";
@@ -169,6 +175,7 @@ function popupHtml(feature) {
 
   map.addLayer({
     id:"canal-master-line", type:"line", source:"canalmaster",
+    layout:{"visibility":"none"},
     paint:{
       "line-color":["match",["get","risk_status"],
         "critical_gate","#991B1B",
@@ -191,6 +198,19 @@ function popupHtml(feature) {
   });
 
   map.addLayer({
+    id:"live-flood-label", type:"symbol", source:"liveflood",
+    minzoom:11,
+    layout:{
+      "text-field":["concat",["to-string",["coalesce",["get","depth_cm"],0]]," cm"],
+      "text-size":11,
+      "text-offset":[0,1.35],
+      "text-anchor":"top",
+      "text-allow-overlap":false
+    },
+    paint:{"text-color":"#991B1B","text-halo-color":"#ffffff","text-halo-width":2}
+  });
+
+  map.addLayer({
     id:"road-line", type:"line", source:"road",
     paint:{
       "line-color":["match",["get","risk_status"],
@@ -203,6 +223,7 @@ function popupHtml(feature) {
     }
   });  map.addLayer({
     id:"soi-line", type:"line", source:"soi",
+    layout:{"visibility":"none"},
     paint:{"line-color":"#666666","line-width":4,"line-opacity":0.8}
   });
 
@@ -340,6 +361,7 @@ function popupHtml(feature) {
 
   map.addLayer({
     id:"sensor-circle", type:"circle", source:"sensor",
+    layout:{"visibility":"none"},
     paint:{
       "circle-radius":6,
       "circle-color":"#0288D1",
@@ -364,7 +386,11 @@ function popupHtml(feature) {
   let meta={};
   try { meta=await fetchJsonTimeout("./data/live_status.json",5000); } catch(e) {}
   const updated=meta.updated_at||"unknown";
-  document.getElementById("lastUpdated").textContent="Data update: "+updated;
+  document.getElementById("lastUpdated").textContent="อัปเดต "+updated;
+  document.getElementById("kpiFloodRoads").textContent=data.liveflood.features.length;
+  document.getElementById("kpiGates").textContent=data.watercontrol.features.length;
+  document.getElementById("kpiCorridors").textContent=data.canal.features.length+data.hokwa.features.length;
+  document.getElementById("kpiClosures").textContent=data.closure.features.length;
   document.getElementById("stats").innerHTML =
     "BMA canal segments: "+data.canalmaster.features.length+"<br>"+
     "Live flooded roads: "+data.liveflood.features.length+"<br>"+
@@ -381,7 +407,7 @@ function popupHtml(feature) {
   finishLoading(errors.length ? "Ready with "+errors.length+" warning(s)" : "Ready");
 });const groups = {
   canalmaster:["canal-master-line"],
-  liveflood:["live-flood-circle"],
+  liveflood:["live-flood-circle","live-flood-label"],
   road:["road-line"],
   soi:["soi-line"],
   sensor:["sensor-circle"],
@@ -482,3 +508,14 @@ map.on("click",async e=>{
   try { await buildRoute(); }
   catch(err) { setRouteStatus("Route error: "+err.message); }
 });
+
+const controlPanel=document.getElementById("controlPanel");
+const panelToggle=document.getElementById("panelToggle");
+const panelClose=document.getElementById("panelClose");
+function setPanelCollapsed(v){
+  if(!controlPanel) return;
+  controlPanel.classList.toggle("collapsed",v);
+  if(panelToggle) panelToggle.style.display=v?"block":"";
+}
+panelClose?.addEventListener("click",()=>setPanelCollapsed(true));
+panelToggle?.addEventListener("click",()=>setPanelCollapsed(false));
