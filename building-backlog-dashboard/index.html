@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Practika Building Backlog Dashboard 2569</title>
+<link rel="stylesheet" href="styles.css"></head>
+<body><div class="wrap">
+<div class="topbar"><div><h1>Building Backlog Dashboard — 2569</h1><div class="subtitle">ข้อมูลจาก “Monitor งานอาคาร ปี 2569.xlsx” และ “งานตามนโยบาย MD ปี 2569.xlsx” · Snapshot 30/09/2569</div></div><div class="badge">Interactive • กดกราฟ/กลุ่มเพื่อ Drill-down</div></div>
+<div class="tabs"><button class="tab active" data-tab="building">งานอาคาร</button><button class="tab" data-tab="md">งานตามนโยบาย MD</button></div>
+
+<section id="buildingTab">
+<div class="cards" id="cards"></div>
+<div class="grid2">
+  <div class="panel chart"><h3>สถานะงานทั้งหมด</h3><div id="statusDonut"></div></div>
+  <div class="panel chart"><h3>Backlog ตาม Aging <span class="small muted">(คลิกแท่งเพื่อกรอง)</span></h3><div id="agingChart"></div></div>
+  <div class="panel chart"><h3>Backlog ตามหมวดงาน <span class="small muted">(คลิกแท่งเพื่อกรอง)</span></h3><div id="categoryChart"></div></div>
+  <div class="panel chart"><h3>Backlog ตามสถานะกำหนดการ <span class="small muted">(คลิกแท่งเพื่อกรอง)</span></h3><div id="dueChart"></div></div>
+</div>
+<div class="insight" id="insights"></div>
+<div class="controls">
+<input id="search" placeholder="ค้นหาชื่องาน / รายละเอียด / ผู้แจ้ง / หมวดงาน...">
+<select id="statusFilter"><option value="คงค้าง">คงค้างเท่านั้น</option><option value="ALL">ทุกสถานะ</option><option value="เสร็จ">เสร็จ</option><option value="ข้อมูลไม่ครบ">ข้อมูลไม่ครบ</option></select>
+<select id="groupBy"><option value="aging">จัดกลุ่ม: Aging</option><option value="category">จัดกลุ่ม: หมวดงาน</option><option value="dueStatus">จัดกลุ่ม: Due Status</option><option value="difficulty">จัดกลุ่ม: ความยาก</option><option value="requester">จัดกลุ่ม: ผู้แจ้ง/เจ้าของเรื่อง</option></select>
+<button class="secondary" id="reset">ล้าง Filter</button><button class="primary" id="csv">Export รายการที่กรองเป็น CSV</button>
+</div>
+<div class="section-title"><h2>Drill-down รายละเอียด</h2><div class="muted" id="resultCount"></div></div>
+<div id="drilldown"></div>
+<div class="section-title"><h2>Master List</h2><div class="muted">คลิก “รายละเอียด” ในแต่ละแถวได้</div></div>
+<div class="tablewrap"><table><thead><tr><th>No.</th><th>งาน</th><th>หมวด</th><th>ผู้แจ้ง</th><th>วันที่รับ</th><th>Aging</th><th>Plan</th><th>Due</th><th>ระดับ</th><th>Status</th><th></th></tr></thead><tbody id="masterBody"></tbody></table></div>
+</section>
+
+<section id="mdTab" class="hidden">
+<div class="cards" id="mdCards"></div>
+<div class="grid2"><div class="panel chart"><h3>สถานะงานตามนโยบาย MD</h3><div id="mdDonut"></div></div><div class="panel chart"><h3>สถานะ Target ของงานที่ยังไม่จบ</h3><div id="mdDueChart"></div></div></div>
+<div class="controls"><input id="mdSearch" placeholder="ค้นหางานตามนโยบาย MD..."><select id="mdStatus"><option value="ALL">ทุกสถานะ</option><option value="คงค้าง">คงค้าง</option><option value="พัก/ชะลอ">พัก/ชะลอ</option><option value="เสร็จ">เสร็จ</option></select><button class="secondary" id="mdReset">ล้าง Filter</button></div>
+<div class="section-title"><h2>รายละเอียดงาน MD</h2><div class="muted" id="mdCount"></div></div><div class="tablewrap"><table><thead><tr><th>No.</th><th>ชื่องาน</th><th>รับนโยบาย</th><th>Target</th><th>Actual</th><th>Due Status</th><th>Status</th><th>หมายเหตุ</th></tr></thead><tbody id="mdBody"></tbody></table></div>
+</section>
+</div>
+<script src="data-1.js"></script>
+<script src="data-2.js"></script>
+<script src="data-3.js"></script>
+<script src="data-4.js"></script>
+<script src="data-5.js"></script>
+<script src="data-6.js"></script>
+<script src="data-md.js"></script>
+<script src="app.js"></script>
+</body></html>
