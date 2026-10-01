@@ -90,10 +90,10 @@ function trendArrow(t) {
 function popupHtml(feature) {
   const p=feature.properties || {};
   const name=p.name || p.canal_name || "Unnamed";
-  if(p.confidence==="context_only" && "elevation_m" in p) {
-    return '<div class="gis-popup"><div class="pop-head">Elevation Context</div><div class="pop-body">'+
-      '<div><b>DEM elevation:</b> '+fmtNumber(p.elevation_m,1)+' m</div>'+
-      '<div><b>Band:</b> '+(p.band||"n/a")+'</div>'+
+  if(p.confidence==="context_only") {
+    return '<div class="gis-popup"><div class="pop-head">Low-Lying Elevation Context</div><div class="pop-body">'+
+      '<div><b>Elevation band:</b> '+(p.label||p.band||"n/a")+'</div>'+
+      '<div><b>Representative DEM sample:</b> '+fmtNumber(p.median_sample_m,1)+' m</div>'+
       '<div class="muted">'+(p.source||"")+'</div>'+
       '<div class="muted">'+(p.disclaimer||"")+'</div></div></div>';
   }
@@ -196,7 +196,7 @@ function popupHtml(feature) {
         "0_1",0.40,
         "1_2",0.28,
         "2_3",0.18,
-        "3_plus",0.03,
+        "3_plus",0.0,
         0.05]
     }
   });
