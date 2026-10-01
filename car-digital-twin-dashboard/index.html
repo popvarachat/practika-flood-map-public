@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#081b2c">
+<title>PRACTIKA CAR Digital Twin</title>
+<meta name="description" content="Executive CAR analytics and public-safe case explorer from the PRACTIKA CAR Digital Twin.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="./styles.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+</head>
+<body>
+<header class="topbar">
+  <div class="brand"><div class="mark">DT</div><div><div class="eyebrow">PRACTIKA · QUALITY INTELLIGENCE</div><h1>CAR Digital Twin</h1><p>Executive analytics → Drill-down → Case evidence</p></div></div>
+  <div class="trust"><span class="pulse"></span><div><b>Published Digital Twin</b><small id="snapshotText">Loading snapshot…</small></div></div>
+</header>
+
+<main class="shell">
+  <section class="hero">
+    <div>
+      <span class="badge">PUBLIC-SAFE VIEW</span>
+      <h2>จาก CAR PDF สู่ข้อมูลที่วิเคราะห์และย้อนกลับได้ระดับเคส</h2>
+      <p>เปรียบเทียบ 2568 vs 2569 ด้วยวันที่ออก CAR จริง และเปิดดูรายละเอียดแต่ละ CAR พร้อม revision timeline ได้จาก Digital Twin</p>
+    </div>
+    <div class="hero-trust">
+      <div><span>CASE TWIN</span><strong id="heroCases">—</strong></div>
+      <div><span>DOCUMENT TWIN</span><strong id="heroDocs">—</strong></div>
+      <div><span>TRACEABILITY</span><strong>100%</strong></div>
+    </div>
+  </section>
+
+  <nav class="tabs" aria-label="dashboard sections">
+    <button class="tab active" data-target="executive">Executive</button>
+    <button class="tab" data-target="analysis">Analysis</button>
+    <button class="tab" data-target="explorer">CAR Explorer</button>
+    <button class="tab" data-target="dataTrust">Data Trust</button>
+  </nav>
+
+  <section id="executive" class="section-block">
+    <div class="section-head"><div><span class="eyebrow">EXECUTIVE VIEW</span><h3>CAR YOY through 30 Sep</h3></div><span class="hint">Cutoff = วันที่ออก CAR</span></div>
+    <div class="kpis">
+      <article class="kpi"><span>Total CAR YTD</span><b id="kpiTotal">—</b><small id="kpiTotalSub">—</small></article>
+      <article class="kpi"><span>Formal NC · Major+Minor</span><b id="kpiFormal">—</b><small id="kpiFormalSub">—</small></article>
+      <article class="kpi"><span>Customer Complaint</span><b id="kpiComplaint">—</b><small id="kpiComplaintSub">—</small></article>
+      <article class="kpi risk"><span>Overdue · 2569</span><b id="kpiOverdue">—</b><small>เฉพาะเคสที่ยังเปิดและเลยกำหนด</small></article>
+    </div>
+    <div class="grid2">
+      <article class="card chart-card"><div class="card-title"><b>CAR by Category</b><span>จำนวนเคส</span></div><canvas id="categoryChart"></canvas></article>
+      <article class="card chart-card"><div class="card-title"><b>Severity Mix</b><span>Major / Minor / OBS / OFI</span></div><canvas id="severityChart"></canvas></article>
+    </div>
+    <article class="card insight-card">
+      <div class="card-title"><b>Management Signals</b><span>อ่านจาก Digital Twin</span></div>
+      <div id="signals" class="signal-grid"></div>
+    </article>
+  </section>
+
+  <section id="analysis" class="section-block">
+    <div class="section-head"><div><span class="eyebrow">BUSINESS ANALYSIS</span><h3>Functional Involvement</h3></div><span class="hint">เคสหนึ่งอาจเกี่ยวข้องมากกว่า 1 กลุ่ม</span></div>
+    <article class="card chart-card tall"><canvas id="functionChart"></canvas></article>
+    <div class="grid2">
+      <article class="card"><div class="card-title"><b>2569 · Top Receiving Units</b><span>Best available unit/scope</span></div><div id="topUnits" class="rank-list"></div></article>
+      <article class="card"><div class="card-title"><b>Open CAR by Status</b><span>ณ snapshot</span></div><canvas id="statusChart"></canvas></article>
+    </div>
+  </section>
+
+  <section id="explorer" class="section-block">
+    <div class="section-head"><div><span class="eyebrow">CASE EXPLORER</span><h3>Drill-down ถึงข้อมูลใน CAR แต่ละฉบับ</h3></div><span id="resultCount" class="hint">—</span></div>
+    <div class="filters card">
+      <input id="searchInput" type="search" placeholder="ค้นหา CAR, หน่วยงาน, รายละเอียดปัญหา…">
+      <select id="yearFilter"><option value="">ทุกปี</option><option value="2568">2568</option><option value="2569">2569</option></select>
+      <select id="categoryFilter"><option value="">ทุกประเภท</option></select>
+      <select id="severityFilter"><option value="">ทุก Severity</option></select>
+      <select id="statusFilter"><option value="">ทุกสถานะ</option></select>
+      <button id="clearFilters">Clear</button>
+    </div>
+    <div class="table-wrap card">
+      <table>
+        <thead><tr><th>CAR</th><th>วันที่ออก</th><th>หน่วยงานรับ</th><th>Category</th><th>Severity</th><th>Status</th><th></th></tr></thead>
+        <tbody id="caseRows"></tbody>
+      </table>
+      <div class="pager"><button id="prevPage">← ก่อนหน้า</button><span id="pageText"></span><button id="nextPage">ถัดไป →</button></div>
+    </div>
+  </section>
+
+  <section id="dataTrust" class="section-block">
+    <div class="section-head"><div><span class="eyebrow">DATA GOVERNANCE</span><h3>Why this is a Digital Twin</h3></div><span class="hint">Case + Document + Lineage + Quality</span></div>
+    <div class="trust-grid">
+      <article class="card"><b>Case Twin</b><p>หนึ่ง CAR = หนึ่ง canonical entity มีวันที่ หน่วยงาน Category Severity Status และ Issue Detail</p></article>
+      <article class="card"><b>Document Twin</b><p>เก็บ revision timeline ของเอกสารแต่ละ CAR เพื่อเห็นวิวัฒนาการจาก original → extension → closed</p></article>
+      <article class="card"><b>Source Lineage</b><p>Internal Twin เก็บ Drive lineage เต็มรูปแบบ ส่วน Public View ซ่อน URL / Drive ID และข้อมูลระบุตัวตน</p></article>
+      <article class="card"><b>Data Quality</b><p>ข้อมูลต้นฉบับที่ว่างหรือขัดแย้งจะถูก flag ไม่เดาหรือแก้เงียบ</p></article>
+    </div>
+    <div class="public-note"><b>Public-safe publication policy:</b> ชื่อบุคคล อีเมล เบอร์โทร Drive URL/File ID, raw form fields และหลักฐานภายในไม่ถูกเผยแพร่ใน GitHub Pages</div>
+  </section>
+</main>
+
+<div id="modal" class="modal" aria-hidden="true">
+  <div class="modal-backdrop" data-close="1"></div>
+  <article class="modal-panel">
+    <button class="modal-close" data-close="1" aria-label="ปิด">×</button>
+    <div id="caseDetail"></div>
+  </article>
+</div>
+
+<footer>Source: PRACTIKA CAR Digital Twin · Public-safe redacted snapshot · GitHub Pages</footer>
+<script src="./app.js"></script>
+</body></html>
