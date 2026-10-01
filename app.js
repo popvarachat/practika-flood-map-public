@@ -183,6 +183,7 @@ function popupHtml(feature) {
 
   map.addLayer({
     id:"elevation-context-fill", type:"fill", source:"elevation",
+    layout:{"visibility":"none"},
     paint:{
       "fill-color":["match",["get","band"],
         "below_0","#2E3EB8",
