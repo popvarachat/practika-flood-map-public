@@ -187,7 +187,7 @@ function popupHtml(feature) {
       source:"elevation-context",
       layout:{"visibility":"none"},
       paint:{
-        "raster-opacity":0.82,
+        "raster-opacity":0.85,
         "raster-fade-duration":0,
         "raster-resampling":"linear"
       }
@@ -505,6 +505,17 @@ async function buildRoute() {
   const level=risk.flooded>0 ? "danger" : (risk.caution>0 ? "warn" : "good");
   setRouteStatus(km+" km · "+min+" นาที · "+riskText+" · Risk assessment only",level);
 }
+
+
+const elevationOpacitySlider=document.getElementById("elevationOpacitySlider");
+const elevationOpacityValue=document.getElementById("elevationOpacityValue");
+elevationOpacitySlider?.addEventListener("input",e=>{
+  const pct=Number(e.target.value);
+  if(elevationOpacityValue) elevationOpacityValue.textContent=pct+"%";
+  if(map.getLayer("elevation-context-raster")){
+    map.setPaintProperty("elevation-context-raster","raster-opacity",pct/100);
+  }
+});
 
 document.getElementById("refreshDataBtn").addEventListener("click",()=>{
   document.getElementById("refreshState").textContent="Public snapshot · reload page";

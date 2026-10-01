@@ -57,6 +57,11 @@
       <summary><span>สถานการณ์ปัจจุบัน</span><span class="summary-hint">Priority</span></summary>
       <div class="layer-list">
         <label><input type="checkbox" data-layer="elevation"><span>พื้นที่ต่ำ / Elevation Context</span><i class="tag slate">CONTEXT</i></label>
+        <div class="elevation-opacity-control">
+          <div class="opacity-head"><span>ความเข้ม Elevation</span><b id="elevationOpacityValue">85%</b></div>
+          <input id="elevationOpacitySlider" type="range" min="20" max="100" step="5" value="85" aria-label="ปรับความเข้ม Elevation">
+          <div class="opacity-scale"><span>อ่อน</span><span>เข้ม</span></div>
+        </div>
         <label><input type="checkbox" data-layer="liveflood" checked><span>น้ำท่วมถนน Live DDS</span><i class="tag red">LIVE</i></label>
         <label><input type="checkbox" data-layer="flood" checked><span>พื้นที่น้ำท่วม / Impact Area</span><i class="tag orange">AREA</i></label>
         <label><input type="checkbox" data-layer="closure" checked><span>ถนนปิด (ยืนยันแล้วเท่านั้น)</span><i class="tag red">CONFIRMED</i></label>
