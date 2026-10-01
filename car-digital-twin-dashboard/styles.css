@@ -11,3 +11,16 @@ button,input,select{font:inherit}.topbar{position:sticky;top:0;z-index:20;displa
 .modal{position:fixed;inset:0;z-index:50;display:none}.modal.open{display:block}.modal-backdrop{position:absolute;inset:0;background:rgba(0,0,0,.58);backdrop-filter:blur(6px)}.modal-panel{position:absolute;right:0;top:0;height:100%;width:min(760px,94vw);overflow:auto;background:#091a29;border-left:1px solid var(--line);padding:24px;box-shadow:-20px 0 60px rgba(0,0,0,.35)}.modal-close{position:sticky;top:0;float:right;border:1px solid var(--line);background:#142c40;color:var(--text);border-radius:10px;width:38px;height:38px;font-size:22px;cursor:pointer}.detail-head h2{margin:5px 0}.detail-meta{display:flex;gap:7px;flex-wrap:wrap;margin:9px 0 16px}.detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}.detail-box{border:1px solid var(--line);border-radius:12px;padding:12px;background:#0b2235}.detail-box span{display:block;color:var(--muted);font-size:10px}.detail-box b{font-size:13px}.detail-section{margin-top:16px}.detail-section h4{margin:0 0 7px}.detail-text{white-space:pre-wrap;color:#c3d2de;line-height:1.65;font-size:13px;border:1px solid var(--line);border-radius:12px;padding:13px;background:#071724}.timeline{display:grid;gap:7px}.doc{display:grid;grid-template-columns:90px 1fr;gap:10px;border-left:2px solid #315b7b;padding:6px 0 6px 12px}.doc small{color:var(--muted)}footer{text-align:center;color:#71899b;font-size:11px;padding:25px}
 @media(max-width:1000px){.hero{grid-template-columns:1fr}.kpis,.signal-grid,.trust-grid{grid-template-columns:repeat(2,1fr)}.filters{grid-template-columns:1fr 1fr}.grid2{grid-template-columns:1fr}.topbar{position:relative}.tabs{top:0}.table-wrap{overflow:auto}table{min-width:860px}}
 @media(max-width:620px){.shell{padding:14px}.topbar{padding:14px}.trust{display:none}.hero-trust{grid-template-columns:1fr}.kpis,.signal-grid,.trust-grid{grid-template-columns:1fr}.tabs{overflow:auto}.filters{grid-template-columns:1fr}.detail-grid{grid-template-columns:1fr}}
+
+/* Chart visibility + stable responsive sizing */
+.chart-card{height:420px;min-height:420px}
+.chart-card.tall{height:520px;min-height:520px}
+.chart-card canvas{display:block!important;width:100%!important;height:340px!important;max-height:340px!important}
+.chart-card.tall canvas{height:450px!important;max-height:450px!important}
+#statusChart{height:300px!important;max-height:300px!important}
+@media(max-width:1000px){
+  .chart-card{height:380px;min-height:380px}
+  .chart-card canvas{height:300px!important;max-height:300px!important}
+  .chart-card.tall{height:480px;min-height:480px}
+  .chart-card.tall canvas{height:410px!important;max-height:410px!important}
+}

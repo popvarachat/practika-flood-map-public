@@ -9,7 +9,10 @@ const ytd=y=>S.cases.filter(c=>c.year_be===y&&(()=>{const d=parseDMY(c.issue_dat
 const count=(arr,key,val)=>arr.filter(x=>x[key]===val).length;
 const countSev=(arr,vals)=>arr.filter(x=>vals.includes(x.severity)).length;
 const mkChart=(id,cfg)=>{const ch=new Chart($(id),cfg);S.charts.push(ch);return ch};
-Chart.defaults.color="#9fb4c5";Chart.defaults.borderColor="rgba(100,140,170,.15)";Chart.defaults.font.family='"Noto Sans Thai",system-ui,sans-serif';
+Chart.defaults.color="#9fb4c5";
+Chart.defaults.borderColor="rgba(100,140,170,.15)";
+Chart.defaults.font.family='"Noto Sans Thai",system-ui,sans-serif';
+const COLOR_68="#4aa3ff",COLOR_69="#61e0d1",COLOR_RED="#ff7b86",COLOR_AMBER="#ffca6a",COLOR_GREEN="#62d79c";
 
 function initTabs(){document.querySelectorAll(".tab").forEach(b=>b.addEventListener("click",()=>{document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));b.classList.add("active");$(b.dataset.target).scrollIntoView({behavior:"smooth",block:"start"});}));}
 
@@ -25,9 +28,9 @@ function buildExecutive(meta){
  $("kpiComplaint").textContent=fmt(compB);$("kpiComplaintSub").textContent="2568 "+compA+" → 2569 "+compB+" · "+(compB-compA>=0?"+":"")+(compB-compA);
  $("kpiOverdue").textContent=fmt(overdue);
  const cats=["Internal Audit","Process","Complaint","Legal","Other"];
- mkChart("categoryChart",{type:"bar",data:{labels:cats,datasets:[{label:"2568",data:cats.map(x=>count(a,"category",x))},{label:"2569",data:cats.map(x=>count(b,"category",x))}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:"top"}},scales:{x:{grid:{display:false}},y:{beginAtZero:true}}}});
+ mkChart("categoryChart",{type:"bar",data:{labels:cats,datasets:[{label:"2568",data:cats.map(x=>count(a,"category",x)),backgroundColor:COLOR_68,borderColor:COLOR_68,borderWidth:1,borderRadius:6},{label:"2569",data:cats.map(x=>count(b,"category",x)),backgroundColor:COLOR_69,borderColor:COLOR_69,borderWidth:1,borderRadius:6}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:"top"}},scales:{x:{grid:{display:false}},y:{beginAtZero:true}}}});
  const sevs=["Major","Minor","OBS","OFI"];
- mkChart("severityChart",{type:"bar",data:{labels:sevs,datasets:[{label:"2568",data:sevs.map(x=>count(a,"severity",x))},{label:"2569",data:sevs.map(x=>count(b,"severity",x))}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:"top"}},scales:{x:{grid:{display:false}},y:{beginAtZero:true}}}});
+ mkChart("severityChart",{type:"bar",data:{labels:sevs,datasets:[{label:"2568",data:sevs.map(x=>count(a,"severity",x)),backgroundColor:COLOR_68,borderColor:COLOR_68,borderWidth:1,borderRadius:6},{label:"2569",data:sevs.map(x=>count(b,"severity",x)),backgroundColor:COLOR_69,borderColor:COLOR_69,borderWidth:1,borderRadius:6}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:"top"}},scales:{x:{grid:{display:false}},y:{beginAtZero:true}}}});
  const obsA=count(a,"severity","OBS"),obsB=count(b,"severity","OBS");
  const engA=a.filter(c=>c.functional_groups.includes("Engineering / Design / Innovation / Planning")&&c.severity==="Major").length;
  const engB=b.filter(c=>c.functional_groups.includes("Engineering / Design / Innovation / Planning")&&c.severity==="Major").length;
@@ -40,11 +43,11 @@ function buildAnalysis(){
  const groups=[...new Set(S.cases.flatMap(c=>c.functional_groups))].filter(x=>x!=="Other / Unclassified");
  const ca=g=>a.filter(c=>c.functional_groups.includes(g)).length,cb=g=>b.filter(c=>c.functional_groups.includes(g)).length;
  const sorted=groups.map(g=>({g:g,a:ca(g),b:cb(g)})).sort((x,y)=>(y.a+y.b)-(x.a+x.b)).slice(0,10);
- mkChart("functionChart",{type:"bar",data:{labels:sorted.map(x=>x.g),datasets:[{label:"2568",data:sorted.map(x=>x.a)},{label:"2569",data:sorted.map(x=>x.b)}]},options:{indexAxis:"y",responsive:true,maintainAspectRatio:false,plugins:{legend:{position:"top"}},scales:{x:{beginAtZero:true},y:{grid:{display:false}}}}});
+ mkChart("functionChart",{type:"bar",data:{labels:sorted.map(x=>x.g),datasets:[{label:"2568",data:sorted.map(x=>x.a),backgroundColor:COLOR_68,borderColor:COLOR_68,borderWidth:1,borderRadius:6},{label:"2569",data:sorted.map(x=>x.b),backgroundColor:COLOR_69,borderColor:COLOR_69,borderWidth:1,borderRadius:6}]},options:{indexAxis:"y",responsive:true,maintainAspectRatio:false,plugins:{legend:{position:"top"}},scales:{x:{beginAtZero:true},y:{grid:{display:false}}}}});
  const y69=S.cases.filter(c=>c.year_be===2569),unitCounts={};y69.forEach(c=>{const u=c.receiving_best||"Unspecified";unitCounts[u]=(unitCounts[u]||0)+1;});
  $("topUnits").innerHTML=Object.entries(unitCounts).sort((a,b)=>b[1]-a[1]).slice(0,12).map((x,i)=>'<div class="rank"><span>'+(i+1)+'. '+esc(x[0])+'</span><b>'+x[1]+'</b></div>').join("");
  const sts=["Closed","Open / Not Due","Overdue"];
- mkChart("statusChart",{type:"doughnut",data:{labels:sts,datasets:[{data:sts.map(x=>y69.filter(c=>c.status===x).length)}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:"bottom"}}}});
+ mkChart("statusChart",{type:"doughnut",data:{labels:sts,datasets:[{data:sts.map(x=>y69.filter(c=>c.status===x).length),backgroundColor:[COLOR_GREEN,COLOR_AMBER,COLOR_RED],borderColor:"#0d2032",borderWidth:3}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:"bottom"}}}});
 }
 
 function fillSelect(id,vals){$(id).innerHTML+=[...new Set(vals.filter(Boolean))].sort().map(v=>'<option value="'+esc(v)+'">'+esc(v)+'</option>').join("");}
