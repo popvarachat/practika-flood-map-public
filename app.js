@@ -37,7 +37,8 @@ map.addControl(new maplibregl.NavigationControl(), "bottom-right");const files =
   canal: "./data/canal_impact_areas.geojson",
   hokwa: "./data/khlong_hokwa_overflow_area.geojson",
   canalmaster: "./data/bangkok_canals_master.geojson",
-  liveflood: "./data/live_road_flood_points.geojson"
+  liveflood: "./data/live_road_flood_points.geojson",
+  elevation: "./data/elevation_context.geojson"
 };
 
 function updateLoading(done,total,detail="") {
@@ -89,6 +90,13 @@ function trendArrow(t) {
 function popupHtml(feature) {
   const p=feature.properties || {};
   const name=p.name || p.canal_name || "Unnamed";
+  if(p.confidence==="context_only" && "elevation_m" in p) {
+    return '<div class="gis-popup"><div class="pop-head">Elevation Context</div><div class="pop-body">'+
+      '<div><b>DEM elevation:</b> '+fmtNumber(p.elevation_m,1)+' m</div>'+
+      '<div><b>Band:</b> '+(p.band||"n/a")+'</div>'+
+      '<div class="muted">'+(p.source||"")+'</div>'+
+      '<div class="muted">'+(p.disclaimer||"")+'</div></div></div>';
+  }
   if(p.closure_confirmed===false && "depth_cm" in p) {
     const cls=p.status==="critical"?"danger":"warn";
     return '<div class="gis-popup"><div class="pop-head">'+name+'</div><div class="pop-body">'+
@@ -157,22 +165,41 @@ function popupHtml(feature) {
   let loaded=0;
   const errors=[];
   updateLoading(0,entries.length,"Loading local GIS sources");
-  for (const [key,url] of entries) {
+  await Promise.all(entries.map(async ([key,url])=>{
     try {
-      data[key]=await fetchJsonTimeout(url,10000);
+      data[key]=await fetchJsonTimeout(url,12000);
       (data[key].features||[]).forEach(f=>extendBounds(bounds,f.geometry));
     } catch(err) {
       errors.push(key+": "+err.message);
       data[key]={type:"FeatureCollection",features:[]};
     }
-    map.addSource(key,{type:"geojson",data:data[key]});
     loaded++;
     updateLoading(loaded,entries.length,"Loaded "+key+" ("+loaded+"/"+entries.length+")");
-  }
+  }));
+  for (const [key] of entries) map.addSource(key,{type:"geojson",data:data[key]});
   runtimeData=data;
   map.addSource("route",{type:"geojson",data:{type:"FeatureCollection",features:[]}});
   map.addLayer({id:"route-line",type:"line",source:"route",paint:{"line-color":"#7c3aed","line-width":6,"line-opacity":0.9}});
 
+  map.addLayer({
+    id:"elevation-context-fill", type:"fill", source:"elevation",
+    paint:{
+      "fill-color":["match",["get","band"],
+        "below_0","#2E3EB8",
+        "0_1","#6EC5E9",
+        "1_2","#B7EF88",
+        "2_3","#F8E36B",
+        "3_plus","#D6E6B4",
+        "#D6E6B4"],
+      "fill-opacity":["match",["get","band"],
+        "below_0",0.48,
+        "0_1",0.40,
+        "1_2",0.28,
+        "2_3",0.18,
+        "3_plus",0.03,
+        0.05]
+    }
+  });
   map.addLayer({
     id:"canal-master-line", type:"line", source:"canalmaster",
     layout:{"visibility":"none"},
@@ -368,7 +395,7 @@ function popupHtml(feature) {
       "circle-stroke-color":"#ffffff",
       "circle-stroke-width":1.5
     }
-  });  ["canal-master-line","live-flood-circle","road-line","soi-line","sensor-circle","flood-fill","closure-line","watercontrol-circle","riverflow-circle","canal-impact-fill","hokwa-fill"].forEach(id => {
+  });  ["elevation-context-fill","canal-master-line","live-flood-circle","road-line","soi-line","sensor-circle","flood-fill","closure-line","watercontrol-circle","riverflow-circle","canal-impact-fill","hokwa-fill"].forEach(id => {
     map.on("click", id, e => {
       const f = e.features && e.features[0];
       if (!f) return;
@@ -406,6 +433,7 @@ function popupHtml(feature) {
     (errors.length ? "<br><b>Load warnings:</b> "+errors.join("; ") : "");
   finishLoading(errors.length ? "Ready with "+errors.length+" warning(s)" : "Ready");
 });const groups = {
+  elevation:["elevation-context-fill"],
   canalmaster:["canal-master-line"],
   liveflood:["live-flood-circle","live-flood-label"],
   road:["road-line"],

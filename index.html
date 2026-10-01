@@ -48,6 +48,7 @@
         <div><span class="area-swatch confirmed"></span><span>Confirmed</span></div>
         <div><span class="area-swatch derived"></span><span>Derived</span></div>
         <div><span class="area-swatch watch"></span><span>Watch</span></div>
+        <div class="elev-legend-full"><span class="elev-ramp"></span><span>พื้นที่ต่ำ / Elevation</span></div>
         <div><span class="line-swatch route"></span><span>Calculated route</span></div>
       </div>
     </section>
@@ -55,6 +56,7 @@
     <details class="layer-group" open>
       <summary><span>สถานการณ์ปัจจุบัน</span><span class="summary-hint">Priority</span></summary>
       <div class="layer-list">
+        <label><input type="checkbox" data-layer="elevation" checked><span>พื้นที่ต่ำ / Elevation Context</span><i class="tag blue">DEM</i></label>
         <label><input type="checkbox" data-layer="liveflood" checked><span>น้ำท่วมถนน Live DDS</span><i class="tag red">LIVE</i></label>
         <label><input type="checkbox" data-layer="flood" checked><span>พื้นที่น้ำท่วม / Impact Area</span><i class="tag orange">AREA</i></label>
         <label><input type="checkbox" data-layer="closure" checked><span>ถนนปิด (ยืนยันแล้วเท่านั้น)</span><i class="tag red">CONFIRMED</i></label>
@@ -94,7 +96,14 @@
     <footer class="panel-footer">
       <button id="refreshDataBtn" type="button" class="refresh-btn">↻ Reload latest published data</button>
       <span id="refreshState"></span>
-      <div class="trust-note"><b>Data trust:</b> Official BMA/DDS + derived GIS layers. Derived areas are not surveyed inundation boundaries.</div>
+      <div class="elevation-scale">
+        <span><i class="e0"></i>&lt;0 m</span>
+        <span><i class="e1"></i>0–1 m</span>
+        <span><i class="e2"></i>1–2 m</span>
+        <span><i class="e3"></i>2–3 m</span>
+        <span><i class="e4"></i>&gt;3 m</span>
+      </div>
+      <div class="trust-note"><b>Elevation:</b> AWS Open Data Terrain Tiles / Mapzen DEM (context only; not survey-grade).<br><b>Data trust:</b> Official BMA/DDS + derived GIS layers. Derived areas are not surveyed inundation boundaries.</div>
       <div id="stats" class="stats">Loading…</div>
     </footer>
   </aside>
