@@ -1,7 +1,19 @@
+window.addEventListener("error",e=>{
+  const d=document.getElementById("loadingDetail");
+  if(d) d.textContent="JS ERROR: "+(e.message||"unknown");
+});
+window.addEventListener("unhandledrejection",e=>{
+  const d=document.getElementById("loadingDetail");
+  const msg=e.reason?.message || String(e.reason||"unknown");
+  if(d) d.textContent="PROMISE ERROR: "+msg;
+});
+
 let runtimeData = {};
 let routeMode = false;
 let routePoints = [];
 let routeMarkers = [];
+let forecastSummary = null;
+let currentRainDay = 0;
 const ROUTER_ENDPOINT = "https://router.project-osrm.org";
 
 const map = new maplibregl.Map({
@@ -51,7 +63,7 @@ function updateLoading(done,total,detail="") {
 }
 function finishLoading(detail="Ready") {
   updateLoading(100,100,detail);
-  setTimeout(()=>document.getElementById("loadingOverlay")?.classList.add("done"),250);
+  document.getElementById("loadingOverlay")?.classList.add("done");
 }
 async function fetchJsonTimeout(url,ms=10000) {
   const ctrl=new AbortController();
@@ -89,6 +101,15 @@ function trendArrow(t) {
 function popupHtml(feature) {
   const p=feature.properties || {};
   const name=p.name || p.canal_name || "Unnamed";
+  if("precip_mm" in p && p.model) {
+    return '<div class="gis-popup"><div class="pop-head">Rain Forecast · '+(p.valid_date||"")+'</div><div class="pop-body">'+
+      '<div><b>ฝนสะสม:</b> '+fmtNumber(p.precip_mm,1)+' mm/day</div>'+
+      '<div><b>โอกาสฝนสูงสุด:</b> '+fmtNumber(p.probability_pct,0)+'%</div>'+
+      '<div><b>Class:</b> '+(p.rain_class||"n/a")+'</div>'+
+      '<div class="muted">Model: '+(p.model||"")+' · ~'+fmtNumber(p.resolution_km,0)+' km</div>'+
+      '<div class="muted">Run: '+(p.forecast_run||"")+'</div>'+
+      '<div class="muted">'+(p.precision_note||"")+'</div></div></div>';
+  }
   if(p.closure_confirmed===false && "depth_cm" in p) {
     const cls=p.status==="critical"?"danger":"warn";
     return '<div class="gis-popup"><div class="pop-head">'+name+'</div><div class="pop-body">'+
@@ -172,6 +193,28 @@ function popupHtml(feature) {
   runtimeData=data;
   map.addSource("route",{type:"geojson",data:{type:"FeatureCollection",features:[]}});
   map.addLayer({id:"route-line",type:"line",source:"route",paint:{"line-color":"#7c3aed","line-width":6,"line-opacity":0.9}});
+
+  try {
+    forecastSummary=await fetchJsonTimeout("./data/forecast_summary.json",6000);
+    const rain0=await fetchJsonTimeout("./data/rain_forecast_day0.geojson",6000);
+    map.addSource("rainforecast",{type:"geojson",data:rain0});
+    map.addLayer({
+      id:"rainforecast-fill",type:"fill",source:"rainforecast",
+      paint:{
+        "fill-color":["match",["get","rain_class"],
+          "none","rgba(0,0,0,0)",
+          "light","#93C5FD",
+          "moderate","#38BDF8",
+          "heavy","#FACC15",
+          "very_heavy","#F97316",
+          "extreme","#DC2626",
+          "#CBD5E1"],
+        "fill-opacity":["interpolate",["linear"],["coalesce",["get","probability_pct"],0],0,0.08,50,0.18,100,0.34],
+        "fill-outline-color":"rgba(71,85,105,0.25)"
+      }
+    });
+    runtimeData.rainforecast=rain0;
+  } catch(err) { errors.push("rainforecast: "+err.message); }
 
   let elevationMeta=null;
   try {
@@ -391,7 +434,7 @@ function popupHtml(feature) {
       "circle-stroke-color":"#ffffff",
       "circle-stroke-width":1.5
     }
-  });  ["canal-master-line","live-flood-circle","road-line","soi-line","sensor-circle","flood-fill","closure-line","watercontrol-circle","riverflow-circle","canal-impact-fill","hokwa-fill"].forEach(id => {
+  });  ["rainforecast-fill","canal-master-line","live-flood-circle","road-line","soi-line","sensor-circle","flood-fill","closure-line","watercontrol-circle","riverflow-circle","canal-impact-fill","hokwa-fill"].forEach(id => {
     map.on("click", id, e => {
       const f = e.features && e.features[0];
       if (!f) return;
@@ -427,8 +470,15 @@ function popupHtml(feature) {
     "Canal impact areas: "+data.canal.features.length+"<br>"+
     "Hok Wa overflow areas: "+data.hokwa.features.length+
     (errors.length ? "<br><b>Load warnings:</b> "+errors.join("; ") : "");
+  try {
+    renderRainDaySelector();
+    updateRainForecastSummary(0);
+    const news=await fetchJsonTimeout("./data/news_current.json",5000);
+    renderNewsEvidence(news);
+  } catch(err) { errors.push("forecast/news UI: "+err.message); }
   finishLoading(errors.length ? "Ready with "+errors.length+" warning(s)" : "Ready");
 });const groups = {
+  rainforecast:["rainforecast-fill"],
   elevation:["elevation-context-raster"],
   canalmaster:["canal-master-line"],
   liveflood:["live-flood-circle","live-flood-label"],
@@ -442,6 +492,54 @@ function popupHtml(feature) {
   canal:["canal-impact-fill","canal-impact-outline"],
   hokwa:["hokwa-fill","hokwa-outline"]
 };
+
+function escapeHtml(v){
+  return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"}[c]));
+}
+async function selectRainDay(i){
+  currentRainDay=i;
+  try{
+    const fc=await fetchJsonTimeout("./data/rain_forecast_day"+i+".geojson",6000);
+    runtimeData.rainforecast=fc;
+    if(map.getSource("rainforecast")) map.getSource("rainforecast").setData(fc);
+    document.querySelectorAll(".rain-day-btn").forEach((b,j)=>b.classList.toggle("active",j===i));
+    updateRainForecastSummary(i);
+  }catch(err){
+    const el=document.getElementById("rainForecastSummary");
+    if(el) el.textContent="Forecast load error: "+err.message;
+  }
+}
+function renderRainDaySelector(){
+  const box=document.getElementById("rainDaySelector");
+  if(!box || !forecastSummary?.ecmwf?.days) return;
+  box.innerHTML="";
+  forecastSummary.ecmwf.days.forEach((d,i)=>{
+    const b=document.createElement("button");
+    b.type="button"; b.className="rain-day-btn"+(i===0?" active":"");
+    b.innerHTML="<b>"+(i===0?"วันนี้":"+"+i)+"</b><span>"+escapeHtml((d.date||"").slice(5))+"</span>";
+    b.addEventListener("click",()=>selectRainDay(i));
+    box.appendChild(b);
+  });
+}
+function updateRainForecastSummary(i){
+  const el=document.getElementById("rainForecastSummary");
+  const d=forecastSummary?.ecmwf?.days?.[i];
+  if(!el || !d) return;
+  const tmd=forecastSummary?.tmd||{};
+  el.innerHTML="<b>"+escapeHtml(d.date)+"</b> · เฉลี่ย "+fmtNumber(d.mean_mm,1)+" mm · สูงสุด "+fmtNumber(d.max_mm,1)+
+    " mm · โอกาสสูงสุด "+fmtNumber(d.max_probability_pct,0)+"%"+
+    "<div class='forecast-tmd'>TMD: "+escapeHtml(tmd.narrative_th||"ไม่มี narrative")+"</div>"+
+    "<div class='source-health'>TMD "+escapeHtml(tmd.status||"unknown")+" · ECMWF run "+escapeHtml(forecastSummary?.ecmwf?.run_time||"")+"</div>";
+}
+function renderNewsEvidence(payload){
+  const box=document.getElementById("newsEvidenceList");
+  if(!box) return;
+  const items=(payload?.items||[]).slice(0,8);
+  if(!items.length){ box.innerHTML="<div class='micro-note'>ไม่มีข่าว current ที่ผ่าน freshness gate</div>"; return; }
+  box.innerHTML=items.map(x=>"<a class='news-item' href='"+escapeHtml(x.canonical_url)+"' target='_blank' rel='noopener'>"+
+    "<span class='news-source'>"+escapeHtml(x.source_name)+" · "+escapeHtml((x.published_at||"").replace("T"," ").slice(0,16))+"</span>"+
+    "<b>"+escapeHtml(x.title)+"</b><span class='news-category'>"+escapeHtml(x.category||"")+"</span></a>").join("");
+}
 
 document.querySelectorAll("input[data-layer]").forEach(cb => {
   cb.addEventListener("change", () => {

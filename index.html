@@ -71,6 +71,26 @@
     </details>
 
     <details class="layer-group" open>
+      <summary><span>พยากรณ์ฝน 7 วัน</span><span class="summary-hint">Forecast</span></summary>
+      <div class="layer-list">
+        <label><input type="checkbox" data-layer="rainforecast" checked><span>พื้นที่ฝนคาดการณ์ / Rain Forecast</span><i class="tag blue">ECMWF</i></label>
+        <div class="rain-day-selector" id="rainDaySelector"></div>
+        <div class="rain-legend">
+          <span><i class="r0"></i>&lt;1</span><span><i class="r1"></i>1–10</span><span><i class="r2"></i>10–20</span>
+          <span><i class="r3"></i>20–35</span><span><i class="r4"></i>35–50</span><span><i class="r5"></i>&gt;50 mm/day</span>
+        </div>
+        <div id="rainForecastSummary" class="forecast-summary">กำลังโหลดพยากรณ์…</div>
+        <div class="micro-note">Spatial layer = ECMWF IFS HRES ~9 km via Open-Meteo; TMD 7-day narrative ใช้เป็น authoritative reference.</div>
+      </div>
+    </details>
+
+    <details class="layer-group" open>
+      <summary><span>ข่าว / หลักฐานล่าสุด</span><span class="summary-hint">Evidence</span></summary>
+      <div id="newsEvidenceList" class="news-evidence-list">กำลังโหลดข่าวล่าสุด…</div>
+      <div class="micro-note evidence-note">เก็บเฉพาะ metadata + link + เวลา ไม่เก็บเนื้อหาข่าวเต็ม; source stale จะไม่ promote เป็น Current.</div>
+    </details>
+
+    <details class="layer-group" open>
       <summary><span>น้ำและโครงสร้างระบายน้ำ</span><span class="summary-hint">Hydro</span></summary>
       <div class="layer-list">
         <label><input type="checkbox" data-layer="watercontrol" checked><span>ประตูระบายน้ำ / Water level</span><i class="tag blue">WL</i></label>
