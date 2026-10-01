@@ -1,0 +1,53 @@
+{
+  "name": "Bangkok Low-Lying Terrain Context",
+  "image": "./data/elevation_lowlying_context.png",
+  "coordinates": [
+    [
+      100.32792087013117,
+      13.954595768344518
+    ],
+    [
+      100.93850886445931,
+      13.954595768344518
+    ],
+    [
+      100.93850886445931,
+      13.49381898495694
+    ],
+    [
+      100.32792087013117,
+      13.49381898495694
+    ]
+  ],
+  "classes": [
+    {
+      "label": "≤ 1 m",
+      "color": "#2E3EB8",
+      "meaning": "very low terrain context"
+    },
+    {
+      "label": "1–2 m",
+      "color": "#4EB0DF",
+      "meaning": "low terrain context"
+    },
+    {
+      "label": "2–4 m",
+      "color": "#A6E078",
+      "meaning": "moderately low terrain context"
+    }
+  ],
+  "method": {
+    "source_dem": "AWS Open Data Terrain Tiles / Mapzen; global terrain in Thailand includes SRTM-class source data",
+    "dem_zoom": 12,
+    "smoothing": "5x5 median plus ~300 m regional low-pass; designed to avoid false local precision",
+    "mask": "Union of 50 Bangkok districts from BMA DISTRICT FeatureServer",
+    "render": "Static RGBA raster image overlay",
+    "classes": "Broad approximate elevation classes only; >4 m transparent"
+  },
+  "accuracy": {
+    "status": "context_only",
+    "vertical_reference": "Not verified against BMA survey datum; do not use as survey elevation",
+    "warning": "Not suitable for sub-meter or parcel-level flood decisions."
+  },
+  "attribution": "Terrain Tiles / Mapzen; SRTM data courtesy of U.S. Geological Survey; Bangkok boundary: BMA GIS"
+}
