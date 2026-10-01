@@ -1,6 +1,45 @@
 {
-  "updated_at": "2026-10-01T13:44:24.280290+07:00",
+  "updated_at": "2026-10-01T15:53:36.283937+07:00",
   "items": [
+    {
+      "id": 19,
+      "title": "น้ำท่วมดันต้นทุนเกษตร–อาหาร เสียหาย 6.9 หมื่นล้าน\"ข้าว\"เสียหายหนักสุด",
+      "canonical_url": "https://www.thaipbs.or.th/news/content/558972",
+      "published_at": "2026-10-01T13:55:01+07:00",
+      "category": "เศรษฐกิจ",
+      "severity": null,
+      "summary": null,
+      "is_current": 1,
+      "source_name": "Thai PBS",
+      "authority_tier": 2,
+      "locations": []
+    },
+    {
+      "id": 20,
+      "title": "สทนช.เผยเร่งผลักดันน้ำลงอ่าวไทย \"เขื่อนภูมิพล-สิริกิติ์\" ช่วยหน่วงน้ำตอนบน",
+      "canonical_url": "https://www.thaipbs.or.th/news/content/558969",
+      "published_at": "2026-10-01T13:27:26+07:00",
+      "category": "ภัยพิบัติ",
+      "severity": null,
+      "summary": null,
+      "is_current": 1,
+      "source_name": "Thai PBS",
+      "authority_tier": 2,
+      "locations": []
+    },
+    {
+      "id": 21,
+      "title": "\"ณัฐพงษ์\" จี้รัฐบาลกางแผนระบายน้ำด่วน ซัดขาดเอกภาพแก้ภัยพิบัติ",
+      "canonical_url": "https://www.thaipbs.or.th/news/content/558968",
+      "published_at": "2026-10-01T13:19:19+07:00",
+      "category": "การเมือง",
+      "severity": null,
+      "summary": null,
+      "is_current": 1,
+      "source_name": "Thai PBS",
+      "authority_tier": 2,
+      "locations": []
+    },
     {
       "id": 7,
       "title": "กทม.เร่งระบายน้ำฝั่งตะวันออก เตรียมรับมือฝนระลอกใหม่ 8-9 ต.ค.",

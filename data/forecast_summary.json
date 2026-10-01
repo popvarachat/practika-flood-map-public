@@ -1,77 +1,77 @@
 {
-  "updated_at": "2026-10-01T13:44:24.280290+07:00",
+  "updated_at": "2026-10-01T15:53:36.283937+07:00",
   "tmd": {
-    "last_build": "2026-10-01 13:44:29",
+    "last_build": "2026-10-01 15:53:41",
     "period": "1 – 7 ตุลาคม พ.ศ. 2569",
     "narrative_th": "ในช่วงวันที่ 1 – 4 ต.ค. 69 มีฝนฟ้าคะนอง ร้อยละ 20 - 30 ของพื้นที่ \r\nลมใต้ ความเร็ว 10 - 20 กม./ชม.\r\nในช่วงวันที่ 5 - 6 ต.ค. 69 มีฝนฟ้าคะนอง ร้อยละ 60 - 70 ของพื้นที่ กับมีฝนตกหนักและมีลมกระโชกแรงบางพื้นที่\r\nส่วนในวันที่ 7 ต.ค. 69 มีฝนฟ้าคะนอง ร้อยละ 40 - 60 ของพื้นที่\r\nลมตะวันออก ความเร็ว 10 - 20 กม./ชม.\r\nอุณหภูมิต่ำสุด 25 – 27 องศาเซลเซียส อุณหภูมิสูงสุด 33 – 36 องศาเซลเซียส",
     "narrative_en": "During 1 – 4 October 2026, isolated thundershowers.\r\nSoutherly winds 10 - 20 km/hr.\r\nDuring 5 - 6 October 2026, scattered to fairly widespread thundershowers with isolated heavy rains and gusty wind.\r\nOn 7 October 2026, scattered thundershowers.\r\nEasterly winds 10 - 20 km/hr.\r\nMinimum temperature 25 - 27 °C. Maximum temperature 33 - 36 °C.",
     "status": "fresh"
   },
   "ecmwf": {
-    "run_time": "2026-10-01T13:00:00+07:00",
+    "run_time": "2026-10-01T15:00:00+07:00",
     "resolution_km": 9.0,
     "cells": 33,
     "days": [
       {
         "index": 0,
         "date": "2026-10-01",
-        "mean_mm": 5.0,
-        "max_mm": 11.1,
-        "max_probability_pct": 86,
+        "mean_mm": 1.6,
+        "max_mm": 2.4,
+        "max_probability_pct": 65,
         "cells": 33
       },
       {
         "index": 1,
         "date": "2026-10-02",
-        "mean_mm": 3.0,
-        "max_mm": 6.7,
+        "mean_mm": 7.0,
+        "max_mm": 12.3,
         "max_probability_pct": 90,
         "cells": 33
       },
       {
         "index": 2,
         "date": "2026-10-03",
-        "mean_mm": 8.2,
-        "max_mm": 10.9,
-        "max_probability_pct": 98,
+        "mean_mm": 4.3,
+        "max_mm": 6.2,
+        "max_probability_pct": 92,
         "cells": 33
       },
       {
         "index": 3,
         "date": "2026-10-04",
-        "mean_mm": 3.9,
-        "max_mm": 6.3,
-        "max_probability_pct": 92,
+        "mean_mm": 6.3,
+        "max_mm": 9.4,
+        "max_probability_pct": 88,
         "cells": 33
       },
       {
         "index": 4,
         "date": "2026-10-05",
-        "mean_mm": 6.9,
-        "max_mm": 8.6,
-        "max_probability_pct": 92,
+        "mean_mm": 4.1,
+        "max_mm": 11.5,
+        "max_probability_pct": 94,
         "cells": 33
       },
       {
         "index": 5,
         "date": "2026-10-06",
-        "mean_mm": 22.1,
-        "max_mm": 27.1,
-        "max_probability_pct": 92,
+        "mean_mm": 18.3,
+        "max_mm": 25.0,
+        "max_probability_pct": 87,
         "cells": 33
       },
       {
         "index": 6,
         "date": "2026-10-07",
-        "mean_mm": 13.3,
-        "max_mm": 20.0,
-        "max_probability_pct": 87,
+        "mean_mm": 13.6,
+        "max_mm": 23.9,
+        "max_probability_pct": 84,
         "cells": 33
       }
     ]
   },
   "news": {
-    "current_count": 18,
+    "current_count": 21,
     "tmd_cap_status": "stale",
     "thaipbs_status": "fresh"
   }
