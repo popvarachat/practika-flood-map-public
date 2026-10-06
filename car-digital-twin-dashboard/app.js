@@ -1,4 +1,4 @@
-const S={cases:[],filtered:[],page:1,pageSize:25,charts:[],integrity:new Map(),integrityMeta:null,compassMode:""};
+const S={cases:[],filtered:[],page:1,pageSize:25,charts:[],integrity:new Map(),integrityMeta:null,compassMode:"",ncFlow:new Map(),ncFlowData:null,ncSelected:""};
 const $=id=>document.getElementById(id);
 const esc=s=>String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]));
 const fmt=n=>new Intl.NumberFormat("th-TH").format(n||0);
@@ -81,6 +81,77 @@ function buildCompass(data){
    S.page=1;applyFilters();
    $("explorer").scrollIntoView({behavior:"smooth",block:"start"});
  }));
+}
+
+
+function ncCaseId(x){return "CAR-"+String(x.year_be).slice(-2)+"-"+String(Number(x.case_no||0)).padStart(4,"0");}
+function ncDecisionLabel(v){
+ const m={REOPEN_RECOMMENDED:"Reopen Recommended",RETURN_FOR_CORRECTION:"Return for Correction",VERIFY_BEFORE_CLOSE:"Verify Before Close",CLOSE_CANDIDATE:"Close Candidate"};
+ return m[v]||v||"—";
+}
+function ncDecisionClass(v){
+ if(v==="CLOSE_CANDIDATE")return "good";
+ if(v==="VERIFY_BEFORE_CLOSE")return "warn";
+ return "risk";
+}
+function ncStatusLabel(v){return v==="pass"?"PASS":v==="warn"?"WATCH":"FAIL";}
+function buildNCFlow(data){
+ S.ncFlowData=data; S.ncFlow=new Map((data.cases||[]).map(x=>[ncCaseId(x),x]));
+ const q=data.meta?.qmr_decisions||{};
+ $("ncReopen").textContent=fmt(q.REOPEN_RECOMMENDED||0);
+ $("ncReturn").textContent=fmt(q.RETURN_FOR_CORRECTION||0);
+ $("ncVerify").textContent=fmt(q.VERIFY_BEFORE_CLOSE||0);
+ $("ncClose").textContent=fmt(q.CLOSE_CANDIDATE||0);
+ $("ncFlowSnapshot").textContent=fmt(data.meta?.cases||0)+" CAR · วิเคราะห์ครบทุกฉบับจาก Database";
+
+ const stageTitles=["Opening / Qualification","Root Cause","Corrective Action","Effectiveness / Closure"];
+ const sc=data.meta?.stage_counts||{};
+ $("ncAggregateFlow").innerHTML=stageTitles.map((t,i)=>{
+   const pass=sc[t+"|pass"]||0,warn=sc[t+"|warn"]||0,fail=sc[t+"|fail"]||0,total=pass+warn+fail||1;
+   const failPct=Math.round(fail*100/total),warnPct=Math.round(warn*100/total);
+   return '<div class="nc-stage-card"><div class="nc-stage-no">'+String(i+1).padStart(2,"0")+'</div><h4>'+esc(t)+'</h4><div class="nc-stage-bars"><span class="bar fail" style="width:'+failPct+'%"></span><span class="bar warn" style="width:'+warnPct+'%"></span></div><div class="nc-stage-stats"><b class="fail">'+fmt(fail)+' Fail</b><b class="warn">'+fmt(warn)+' Watch</b><b class="pass">'+fmt(pass)+' Pass</b></div><small>'+esc(i===0?"ตั้งโจทย์ / Requirement / Classification":i===1?"วิเคราะห์ให้ถึง System Cause":i===2?"Cause ↔ Action และ System Control":"Verification / Recurrence / QMR Closure")+'</small></div>';
+ }).join("");
+
+ fillNCSelector();
+ $("ncDecisionFilter").addEventListener("change",fillNCSelector);
+ $("ncCaseSelect").addEventListener("change",()=>renderNCFlowCase($("ncCaseSelect").value));
+ $("ncOpenCase").addEventListener("click",()=>{if(S.ncSelected)openCase(S.ncSelected);});
+ const first=(data.cases||[]).find(x=>x.qmr_decision==="REOPEN_RECOMMENDED")||data.cases?.[0];
+ if(first)renderNCFlowCase(ncCaseId(first));
+}
+function fillNCSelector(){
+ const filter=$("ncDecisionFilter")?.value||"";
+ const xs=(S.ncFlowData?.cases||[]).filter(x=>!filter||x.qmr_decision===filter);
+ $("ncCaseSelect").innerHTML=xs.map(x=>{
+   const id=ncCaseId(x),c=S.cases.find(z=>z.case_id===id);
+   return '<option value="'+esc(id)+'">'+esc(id+(c?.car_number?" · "+c.car_number:"")+" · "+ncDecisionLabel(x.qmr_decision))+'</option>';
+ }).join("");
+ if(xs.length){
+   const id=ncCaseId(xs[0]);$("ncCaseSelect").value=id;renderNCFlowCase(id);
+ } else {
+   $("ncCaseTitle").textContent="ไม่พบ CAR ตามตัวกรอง";$("ncFlowMap").innerHTML="";$("ncChainSummary").textContent="";$("ncDecisionBadge").textContent="—";$("ncQmrAction").innerHTML="";
+ }
+}
+function renderNCFlowCase(id){
+ const x=S.ncFlow.get(id); if(!x)return;
+ S.ncSelected=id; if($("ncCaseSelect"))$("ncCaseSelect").value=id;
+ const c=S.cases.find(z=>z.case_id===id);
+ $("ncCaseTitle").textContent=id+(c?.car_number?" · "+c.car_number:"");
+ $("ncChainSummary").textContent=x.chain_summary||"—";
+ $("ncDecisionBadge").className="nc-decision "+ncDecisionClass(x.qmr_decision);
+ $("ncDecisionBadge").textContent=ncDecisionLabel(x.qmr_decision);
+ const labels=["ต้นน้ำ","วิเคราะห์","แก้ระบบ","ปิด/ทวนสอบ"];
+ $("ncFlowMap").innerHTML=(x.stages||[]).map((s,i)=>
+   '<article class="nc-node '+esc(s.status)+'"><div class="nc-node-head"><span>'+labels[i]+'</span><b>'+ncStatusLabel(s.status)+'</b></div><h4>'+esc(s.title)+'</h4><div class="nc-node-block"><small>พลาดตรงไหน</small><p>'+esc(s.finding)+'</p></div><div class="nc-node-block"><small>ทำไมสำคัญ</small><p>'+esc(s.why_it_matters)+'</p></div><div class="nc-node-block next"><small>ลามต่อไป</small><p>'+esc(s.next_risk)+'</p></div>'+(s.score!=null?'<div class="nc-score">Score '+esc(s.score)+'</div>':'')+'</article>'
+ ).join("");
+ const actions={
+  REOPEN_RECOMMENDED:["QMR Action: REOPEN / VERIFY ใหม่","CAR ถูกปิดแล้วแต่ยังพบ Process Failure อย่างน้อย 1 Gate — ควรย้อนตรวจ Root Cause ↔ Action ↔ Effectiveness ก่อนยอมรับการปิด"],
+  RETURN_FOR_CORRECTION:["QMR Action: RETURN","ยังไม่ควรเดินต่อ ให้เจ้าของ CAR แก้จุดที่ Fail ก่อนส่งกลับมา QMR Gate"],
+  VERIFY_BEFORE_CLOSE:["QMR Action: VERIFY","ไม่มี Fail สำคัญแต่ยังมี Warning ต้องเพิ่มหลักฐานหรือทวนสอบก่อนปิด"],
+  CLOSE_CANDIDATE:["QMR Action: CLOSE CANDIDATE","ผ่าน Rule Screen ทุก Gate แต่ QMR ยังต้องยืนยันหลักฐานต้นฉบับก่อนอนุมัติจริง"]
+ };
+ const a=actions[x.qmr_decision]||["QMR Action","Review"];
+ $("ncQmrAction").innerHTML='<b>'+esc(a[0])+'</b><p>'+esc(a[1])+'</p>';
 }
 
 function buildExecutive(meta){
@@ -182,7 +253,7 @@ function renderTable(){
 }
 function openCase(id){
  const c=S.cases.find(x=>x.case_id===id);if(!c)return;
- const i=c.integrity||{};
+ const i=c.integrity||{},ncf=S.ncFlow.get(id)||null;
  const flags=(c.data_quality_flags||[]).map(x=>'<span class="chip">'+esc(x)+'</span>').join(" ");
  const docs=(c.documents||[]).map(d=>'<div class="doc"><small>'+esc(d.role||"revision")+'<br>'+esc((d.modified||"").slice(0,10))+'</small><div>'+esc(d.title||"Document revision")+'</div></div>').join("");
  let h='<div class="detail-head"><span class="eyebrow">CASE TWIN</span><h2>'+esc(c.case_id)+'</h2><div class="detail-meta"><span class="chip sev-'+esc(c.severity)+'">'+esc(c.severity||"—")+'</span><span class="chip">'+esc(c.category||"—")+'</span><span class="chip status-'+esc(c.status)+'">'+esc(c.status)+'</span></div></div>';
@@ -192,10 +263,13 @@ function openCase(id){
   h+='<div class="detail-section"><h4>CAR Integrity Audit · Rule Screen</h4><div class="integrity-grid"><div class="integrity-score"><span>Total</span><b>'+esc(i.integrity_score??"—")+'</b><small>/ 100</small></div><div class="mini-score"><span>Opening</span><b>'+esc(i.opening_quality??"—")+'/20</b></div><div class="mini-score"><span>Root Cause</span><b>'+esc(i.root_cause_quality??"—")+'/30</b></div><div class="mini-score"><span>System Action</span><b>'+esc(i.corrective_action_quality??"—")+'/30</b></div><div class="mini-score"><span>Effectiveness</span><b>'+esc(i.effectiveness_quality??"—")+'/20</b></div></div><div class="audit-verdict '+verdictClass(i.verdict)+'"><b>'+esc(verdictLabel(i.verdict))+'</b><span>'+esc(i.analysis_state==="VISION_REVIEW_REQUIRED"?"ยังมีภาพ/หลักฐานที่ต้องอ่านด้วย Vision ก่อน Final Verdict":"ผ่านการ Rule Screen จากข้อมูล PDF/Database")+'</span></div>'+(weak?'<div class="weak-box"><b>Closure Red Flag:</b> '+weak+'</div>':'')+'<div class="public-note">คะแนนนี้ใช้จัดลำดับ Audit Priority ไม่ใช่การอนุมัติปิด CAR อัตโนมัติ — QMR ต้องตรวจ Root Cause ↔ Corrective Action ↔ Effectiveness กับหลักฐานต้นฉบับ</div></div>';
  }
  h+='<div class="detail-section"><h4>Issue Detail · ข้อมูลจาก CAR</h4><div class="detail-text">'+esc(c.issue_detail||"ไม่มีข้อความในต้นฉบับ")+'</div></div><div class="detail-section"><h4>Requirement / Clause</h4><div class="detail-text">'+esc(c.requirement||"ไม่ระบุ")+'</div></div>';
+ if(ncf){
+  h+='<div class="detail-section"><h4>NC Flow · Process Failure Map</h4><div class="mini-nc-grid">'+ncf.stages.map(s=>'<div class="mini-nc '+esc(s.status)+'"><b>'+esc(s.title)+'</b><small>'+esc(ncStatusLabel(s.status))+'</small><p>'+esc(s.finding)+'</p></div>').join("")+'</div><div class="audit-verdict '+ncDecisionClass(ncf.qmr_decision)+'"><b>'+esc(ncDecisionLabel(ncf.qmr_decision))+'</b><span>'+esc(ncf.chain_summary)+'</span></div></div>';
+ }
  if(flags)h+='<div class="detail-section"><h4>Data Quality Flags</h4><div>'+flags+'</div></div>';
  h+='<div class="detail-section"><h4>Document Twin · Revision Timeline</h4><div class="timeline">'+(docs||"<div class='detail-text'>ไม่มี revision metadata</div>")+'</div></div><div class="public-note">Public-safe view: ลิงก์ Google Drive, File ID, raw form fields และข้อมูลระบุตัวตนถูกซ่อน การตรวจหลักฐานต้นฉบับเต็มรูปแบบต้องใช้ Internal/Admin view</div>';
  $("caseDetail").innerHTML=h;$("modal").classList.add("open");$("modal").setAttribute("aria-hidden","false");
 }
 function initModal(){document.querySelectorAll("[data-close]").forEach(x=>x.addEventListener("click",()=>{$("modal").classList.remove("open");$("modal").setAttribute("aria-hidden","true");}));document.addEventListener("keydown",e=>{if(e.key==="Escape")$("modal").classList.remove("open");});}
-async function boot(){try{const [res,ires]=await Promise.all([fetch("./cases-public.json",{cache:"no-store"}),fetch("./car-integrity-public.json",{cache:"no-store"})]);if(!res.ok)throw new Error("Case data "+res.status);if(!ires.ok)throw new Error("Integrity data "+ires.status);const data=await res.json(),integ=await ires.json();S.integrityMeta=integ.meta;S.integrity=new Map(integ.cases.map(x=>[x.case_id,x]));S.cases=data.cases.map(c=>({...c,integrity:S.integrity.get(c.case_id)||null}));initTabs();buildCompass(integ);buildExecutive(data.meta);buildIntegrity(integ);buildAnalysis();initExplorer();initModal();}catch(e){document.body.innerHTML='<div style="padding:40px;color:white;font-family:sans-serif"><h2>QMR Compass · CAR Digital Twin</h2><p>โหลดข้อมูลไม่สำเร็จ: '+esc(e.message)+'</p></div>';}}
+async function boot(){try{const [res,ires,nres]=await Promise.all([fetch("./cases-public.json",{cache:"no-store"}),fetch("./car-integrity-public.json",{cache:"no-store"}),fetch("./car-nc-flow-public.json",{cache:"no-store"})]);if(!res.ok)throw new Error("Case data "+res.status);if(!ires.ok)throw new Error("Integrity data "+ires.status);if(!nres.ok)throw new Error("NC Flow data "+nres.status);const data=await res.json(),integ=await ires.json(),nc=await nres.json();S.integrityMeta=integ.meta;S.integrity=new Map(integ.cases.map(x=>[x.case_id,x]));S.cases=data.cases.map(c=>({...c,integrity:S.integrity.get(c.case_id)||null}));initTabs();buildCompass(integ);buildNCFlow(nc);buildExecutive(data.meta);buildIntegrity(integ);buildAnalysis();initExplorer();initModal();}catch(e){document.body.innerHTML='<div style="padding:40px;color:white;font-family:sans-serif"><h2>QMR Compass · CAR Digital Twin</h2><p>โหลดข้อมูลไม่สำเร็จ: '+esc(e.message)+'</p></div>';}}
 boot();
