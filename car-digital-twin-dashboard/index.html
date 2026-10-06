@@ -3,26 +3,26 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#081b2c">
-<title>PRACTIKA CAR Digital Twin</title>
+<title>PRACTIKA QMR Compass · CAR Digital Twin</title>
 <meta name="description" content="Executive CAR analytics and public-safe case explorer from the PRACTIKA CAR Digital Twin.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="./styles.css?v=car-integrity-v2">
+<link rel="stylesheet" href="./styles.css?v=qmr-compass-v1">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
 </head>
 <body>
 <header class="topbar">
-  <div class="brand"><div class="mark">DT</div><div><div class="eyebrow">PRACTIKA · QUALITY INTELLIGENCE</div><h1>CAR Digital Twin</h1><p>Executive analytics → Drill-down → Case evidence</p></div></div>
+  <div class="brand"><div class="mark">Q</div><div><div class="eyebrow">PRACTIKA · QMR CONTROL CENTER</div><h1>QMR Compass · CAR Digital Twin</h1><p>Governance → Root Cause → System Action → Effectiveness → Learning</p></div></div>
   <div class="trust"><span class="pulse"></span><div><b>Published Digital Twin</b><small id="snapshotText">Loading snapshot…</small></div></div>
 </header>
 
 <main class="shell">
   <section class="hero">
     <div>
-      <span class="badge">PUBLIC-SAFE VIEW</span>
-      <h2>จาก CAR PDF สู่ข้อมูลที่วิเคราะห์และย้อนกลับได้ระดับเคส</h2>
-      <p>เปรียบเทียบ 2568 vs 2569 ด้วยวันที่ออก CAR จริง และเปิดดูรายละเอียดแต่ละ CAR พร้อม revision timeline ได้จาก Digital Twin</p>
+      <span class="badge">QMR GOVERNANCE COMPASS · PUBLIC-SAFE VIEW</span>
+      <h2>เข็มทิศ QMR: ออก CAR ให้ถูกโจทย์ วิเคราะห์ถึงระบบ และปิดเมื่อพิสูจน์ Effectiveness แล้ว</h2>
+      <p>หน้าหลักนี้มอง CAR เป็น “กระบวนการควบคุม QMS” ไม่ใช่กองเอกสาร — ใช้ชี้ว่า QMR ต้องหยุดอะไร ท้าทายอะไร อนุมัติอะไร และเรียนรู้อะไรจากทั้งระบบ</p>
     </div>
     <div class="hero-trust">
       <div><span>CASE TWIN</span><strong id="heroCases">—</strong></div>
@@ -32,12 +32,110 @@
   </section>
 
   <nav class="tabs" aria-label="dashboard sections">
-    <button class="tab active" data-target="executive">Executive</button>
+    <button class="tab active" data-target="compass">QMR Compass</button>
+    <button class="tab" data-target="executive">Executive</button>
     <button class="tab" data-target="integrity">Integrity</button>
     <button class="tab" data-target="analysis">Analysis</button>
     <button class="tab" data-target="explorer">CAR Explorer</button>
     <button class="tab" data-target="dataTrust">Data Trust</button>
   </nav>
+
+
+  <section id="compass" class="section-block compass-section">
+    <div class="section-head">
+      <div><span class="eyebrow">QMR COMPASS</span><h3>CAR Governance Control Center</h3></div>
+      <span id="compassState" class="hint">Loading process health…</span>
+    </div>
+
+    <div class="compass-banner card">
+      <div class="compass-north">
+        <span class="compass-icon">N</span>
+        <div><small>QMR NORTH STAR</small><b>แก้ระบบ ไม่ใช่แค่ปิดเอกสาร</b><p>CAR จะถือว่าปิดได้เมื่อ Problem → Root Cause → System Action → Evidence → Effectiveness เชื่อมกันครบ</p></div>
+      </div>
+      <div class="process-health">
+        <span>Process Health</span><b id="processHealth">—</b><small id="processHealthNote">—</small>
+      </div>
+    </div>
+
+    <div class="gate-grid">
+      <article class="gate-card" data-gate="opening">
+        <div class="gate-top"><span class="gate-no">A</span><span class="gate-state" id="gateOpeningState">—</span></div>
+        <h4>ออก CAR ถูกไหม</h4>
+        <p>NC ชัด · Requirement ถูก · Evidence พอ · ไม่เปิดยุบยิบแทน Correction/OBS/OFI</p>
+        <div class="gate-metric"><b id="gateOpeningAvg">—</b><span>Avg Opening /20</span></div>
+        <button class="gate-action" data-compass-action="opening">ดูเคสเสี่ยง</button>
+      </article>
+      <article class="gate-card" data-gate="root">
+        <div class="gate-top"><span class="gate-no">B1</span><span class="gate-state" id="gateRootState">—</span></div>
+        <h4>Root Cause ถึงระบบไหม</h4>
+        <p>ไม่หยุดที่ “คนลืม / ไม่ระวัง / สื่อสารไม่ทั่วถึง” ต้องหาว่าระบบเปิดช่องตรงไหน</p>
+        <div class="gate-metric"><b id="gateRootAvg">—</b><span>Avg Root Cause /30</span></div>
+        <button class="gate-action" data-compass-action="root">ดู Root Cause Gap</button>
+      </article>
+      <article class="gate-card" data-gate="action">
+        <div class="gate-top"><span class="gate-no">B2</span><span class="gate-state" id="gateActionState">—</span></div>
+        <h4>Action แก้ Root Cause ไหม</h4>
+        <p>ต้องเปลี่ยน Control System; KYT / Morning Talk / กำชับ เป็น Supporting Action ไม่ใช่คำตอบอัตโนมัติ</p>
+        <div class="gate-metric"><b id="gateActionAvg">—</b><span>Avg System Action /30</span></div>
+        <button class="gate-action" data-compass-action="action">ดู Weak Closure</button>
+      </article>
+      <article class="gate-card" data-gate="effectiveness">
+        <div class="gate-top"><span class="gate-no">C</span><span class="gate-state" id="gateEffectState">—</span></div>
+        <h4>ปิดได้จริงหรือยัง</h4>
+        <p>Action Completed ≠ Effective ต้องมี Verification Period, recurrence check และหลักฐานก่อน QMR Gate</p>
+        <div class="gate-metric"><b id="gateEffectAvg">—</b><span>Avg Effectiveness /20</span></div>
+        <button class="gate-action" data-compass-action="effectiveness">ดู Effectiveness Gap</button>
+      </article>
+    </div>
+
+    <div class="grid2 compass-grid">
+      <article class="card">
+        <div class="card-title"><b>QMR Priority · สิ่งที่ต้องจัดการก่อน</b><span>เรียงจาก Process Risk</span></div>
+        <div id="qmrPriorities" class="priority-list"></div>
+      </article>
+      <article class="card">
+        <div class="card-title"><b>Decision Rules · อนุมัติ / ส่งกลับ / Reopen</b><span>ใช้เป็น Gate ก่อนเซ็น</span></div>
+        <div class="decision-rules">
+          <div class="decision stop"><span>STOP</span><p><b>ส่งกลับ</b> ถ้า Requirement ไม่ชัด, Root Cause เป็นอาการ, Action ไม่ตรง Cause หรือไม่มี Effectiveness</p></div>
+          <div class="decision verify"><span>VERIFY</span><p><b>ตรวจเพิ่ม</b> ถ้ามีหลักฐานแนบแต่ยังอ่านไม่ครบ หรือ Action ดูเป็นระบบแต่ยังไม่มี recurrence check</p></div>
+          <div class="decision go"><span>GO</span><p><b>อนุมัติปิด</b> เมื่อ Cause → Action → Evidence → Effectiveness เชื่อมโยงและตรวจสอบย้อนหลังได้</p></div>
+        </div>
+      </article>
+    </div>
+
+    <article class="card qmr-lifecycle">
+      <div class="card-title"><b>QMR Governance Lifecycle</b><span>มองทั้งกระบวนการ ไม่ติดกับเรื่องของ CAR ใบใดใบหนึ่ง</span></div>
+      <div class="lifecycle">
+        <div><span>01</span><b>Finding</b><small>เกิดอะไรขึ้น</small></div>
+        <div><span>02</span><b>Qualification</b><small>ควรเป็น CAR จริงไหม</small></div>
+        <div><span>03</span><b>Problem</b><small>ตั้งโจทย์ถูกหรือไม่</small></div>
+        <div><span>04</span><b>Requirement</b><small>ผิดข้อกำหนดใด</small></div>
+        <div><span>05</span><b>Root Cause</b><small>ถึงระบบหรือยัง</small></div>
+        <div><span>06</span><b>System Action</b><small>แก้สาเหตุตรงจุด</small></div>
+        <div><span>07</span><b>Evidence</b><small>พิสูจน์ว่าเปลี่ยนจริง</small></div>
+        <div><span>08</span><b>Effectiveness</b><small>ไม่เกิดซ้ำหรือไม่</small></div>
+        <div><span>09</span><b>QMR Gate</b><small>Close / Return / Reopen</small></div>
+        <div><span>10</span><b>Learning</b><small>Cross-CAR / Management Review</small></div>
+      </div>
+    </article>
+
+    <div class="grid2 compass-grid">
+      <article class="card">
+        <div class="card-title"><b>Systemic Closure Ladder</b><span>ยิ่งลงล่างยิ่งแข็งแรง</span></div>
+        <div class="control-ladder">
+          <div class="weak"><b>1 · Reminder</b><span>กำชับ / แจ้ง / Morning Talk / KYT</span></div>
+          <div><b>2 · Competency</b><span>Training + ทดสอบความสามารถ</span></div>
+          <div><b>3 · Standard</b><span>WI / Checklist / Control Plan / Approval Gate</span></div>
+          <div><b>4 · Engineering Control</b><span>Jig / Fixture / Poka-Yoke / Interlock / IT validation</span></div>
+          <div class="strong"><b>5 · Closed-loop Control</b><span>Prevent + Detect + Record + Escalate + Verify effectiveness</span></div>
+        </div>
+      </article>
+      <article class="card">
+        <div class="card-title"><b>QMR Risk Radar</b><span>ตัวชี้ว่าระบบกำลัง “ปิดง่าย” หรือไม่</span></div>
+        <div id="riskRadar" class="risk-radar"></div>
+      </article>
+    </div>
+  </section>
 
   <section id="executive" class="section-block">
     <div class="section-head"><div><span class="eyebrow">EXECUTIVE VIEW</span><h3>CAR YOY through 30 Sep</h3></div><span class="hint">Cutoff = วันที่ออก CAR</span></div>
@@ -98,6 +196,14 @@
       <select id="categoryFilter"><option value="">ทุกประเภท</option></select>
       <select id="severityFilter"><option value="">ทุก Severity</option></select>
       <select id="statusFilter"><option value="">ทุกสถานะ</option></select>
+      <select id="auditFilter">
+        <option value="">ทุก Audit Verdict</option>
+        <option value="ROOT_CAUSE_GAP_RISK">Root Cause Gap</option>
+        <option value="WEAK_CLOSURE_RISK">Weak Closure</option>
+        <option value="EFFECTIVENESS_GAP_RISK">Effectiveness Gap</option>
+        <option value="REVIEW_REQUIRED">Review Required</option>
+        <option value="SYSTEMIC_CLOSURE_CANDIDATE">Systemic Candidate</option>
+      </select>
       <button id="clearFilters">Clear</button>
     </div>
     <div class="table-wrap card">
@@ -130,5 +236,5 @@
 </div>
 
 <footer>Source: PRACTIKA CAR Digital Twin · Public-safe redacted snapshot · GitHub Pages</footer>
-<script src="./app.js?v=car-integrity-v2"></script>
+<script src="./app.js?v=qmr-compass-v1"></script>
 </body></html>
