@@ -14,7 +14,11 @@ Chart.defaults.borderColor="rgba(100,140,170,.15)";
 Chart.defaults.font.family='"Noto Sans Thai",system-ui,sans-serif';
 const COLOR_68="#4aa3ff",COLOR_69="#61e0d1",COLOR_RED="#ff7b86",COLOR_AMBER="#ffca6a",COLOR_GREEN="#62d79c";
 
-function initTabs(){document.querySelectorAll(".tab").forEach(b=>b.addEventListener("click",()=>{document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));b.classList.add("active");$(b.dataset.target).scrollIntoView({behavior:"smooth",block:"start"});}));}
+function initTabs(){document.querySelectorAll(".tab").forEach(b=>b.addEventListener("click",()=>{
+ document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));b.classList.add("active");
+ if(b.dataset.target==="explorer"&&S.compassMode){S.compassMode="";S.page=1;applyFilters();}
+ $(b.dataset.target).scrollIntoView({behavior:"smooth",block:"start"});
+}));}
 
 
 function avg(arr,key){
@@ -161,7 +165,7 @@ function applyFilters(){
  S.filtered=S.cases.filter(c=>{
   const i=c.integrity||{},hay=[c.case_id,c.car_code,c.car_number,c.recipient_scope,c.receiving_unit,c.receiving_best,c.category,c.severity,c.issue_detail,c.requirement,i.verdict,verdictLabel(i.verdict),i.integrity_score,(i.weak_action_hits||[]).join(" ")].join(" ").toLowerCase();
   let special=true;
-  if(S.compassMode==="opening")special=Number(i.opening_quality)<12;
+  if(S.compassMode==="opening")special=Number(i.opening_quality)<16;
   else if(S.compassMode==="root")special=i.verdict==="ROOT_CAUSE_GAP_RISK"||Number(i.root_cause_quality)<15;
   else if(S.compassMode==="action")special=i.verdict==="WEAK_CLOSURE_RISK"||Number(i.corrective_action_quality)<15;
   else if(S.compassMode==="effectiveness")special=i.verdict==="EFFECTIVENESS_GAP_RISK"||Number(i.effectiveness_quality)<10;
@@ -172,7 +176,7 @@ function applyFilters(){
 }
 function renderTable(){
  const start=(S.page-1)*S.pageSize,rows=S.filtered.slice(start,start+S.pageSize),pages=Math.max(1,Math.ceil(S.filtered.length/S.pageSize));
- $("resultCount").textContent="พบ "+fmt(S.filtered.length)+" CAR"+(S.compassMode?" · QMR Focus: "+S.compassMode:"");$("pageText").textContent="หน้า "+S.page+" / "+pages;$("prevPage").disabled=S.page<=1;$("nextPage").disabled=S.page>=pages;
+ $("resultCount").textContent="พบ "+fmt(S.filtered.length)+" CAR"+(S.compassMode?" · QMR Focus: "+S.compassMode+" · กด CAR Explorer หรือ Clear เพื่อดูทั้งหมด":"");$("pageText").textContent="หน้า "+S.page+" / "+pages;$("prevPage").disabled=S.page<=1;$("nextPage").disabled=S.page>=pages;
  $("caseRows").innerHTML=rows.map(c=>{const i=c.integrity||{};return '<tr data-id="'+esc(c.case_id)+'"><td><b>'+esc(c.case_id)+'</b><br><small>'+esc(c.car_code||"")+'</small></td><td>'+esc(c.issue_date||"—")+'</td><td>'+esc(c.receiving_best||"—")+'</td><td>'+esc(c.category||"—")+'</td><td><span class="chip sev-'+esc(c.severity)+'">'+esc(c.severity||"—")+'</span></td><td><span class="chip status-'+esc(c.status)+'">'+esc(c.status)+'</span></td><td><span class="score '+(i.integrity_score>=80?"score-good":i.integrity_score>=60?"score-mid":"score-risk")+'">'+esc(i.integrity_score??"—")+'</span></td><td><span class="audit-chip '+verdictClass(i.verdict)+'">'+esc(verdictLabel(i.verdict))+'</span></td><td>›</td></tr>'}).join("");
  document.querySelectorAll("#caseRows tr").forEach(tr=>tr.addEventListener("click",()=>openCase(tr.dataset.id)));
 }
