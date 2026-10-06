@@ -1,4 +1,4 @@
-const S={cases:[],filtered:[],page:1,pageSize:25,charts:[],integrity:new Map(),integrityMeta:null};
+const S={cases:[],filtered:[],page:1,pageSize:25,charts:[],integrity:new Map(),integrityMeta:null,compassMode:""};
 const $=id=>document.getElementById(id);
 const esc=s=>String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]));
 const fmt=n=>new Intl.NumberFormat("th-TH").format(n||0);
@@ -15,6 +15,69 @@ Chart.defaults.font.family='"Noto Sans Thai",system-ui,sans-serif';
 const COLOR_68="#4aa3ff",COLOR_69="#61e0d1",COLOR_RED="#ff7b86",COLOR_AMBER="#ffca6a",COLOR_GREEN="#62d79c";
 
 function initTabs(){document.querySelectorAll(".tab").forEach(b=>b.addEventListener("click",()=>{document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));b.classList.add("active");$(b.dataset.target).scrollIntoView({behavior:"smooth",block:"start"});}));}
+
+
+function avg(arr,key){
+ const xs=arr.map(x=>Number(x[key])).filter(Number.isFinite);
+ return xs.length?xs.reduce((a,b)=>a+b,0)/xs.length:0;
+}
+function gateState(value,max){
+ const p=max?value/max:0;
+ if(p>=.75)return ["CONTROLLED","good"];
+ if(p>=.60)return ["WATCH","warn"];
+ return ["RISK","risk"];
+}
+function setGate(id,value,max){
+ const [label,cls]=gateState(value,max),el=$(id);
+ el.textContent=label;el.className="gate-state "+cls;
+}
+function buildCompass(data){
+ const rows=data.cases||[];
+ const opening=avg(rows,"opening_quality"),root=avg(rows,"root_cause_quality"),
+       action=avg(rows,"corrective_action_quality"),effect=avg(rows,"effectiveness_quality"),
+       health=Number(data.meta?.avg_integrity_score||0);
+ $("processHealth").textContent=health.toFixed(1)+" / 100";
+ $("processHealthNote").textContent=health>=75?"ระบบอยู่ในช่วงควบคุมได้ แต่ยังต้องเฝ้าระวัง":"ต้องใช้ QMR Gate เข้มขึ้นก่อนอนุมัติปิด";
+ $("compassState").textContent="357 CAR · QMR process view · "+(data.meta?.analysis_states?.VISION_REVIEW_REQUIRED||0)+" เคสมีหลักฐานภาพรอทบทวน";
+ $("gateOpeningAvg").textContent=opening.toFixed(1); $("gateRootAvg").textContent=root.toFixed(1);
+ $("gateActionAvg").textContent=action.toFixed(1); $("gateEffectAvg").textContent=effect.toFixed(1);
+ setGate("gateOpeningState",opening,20);setGate("gateRootState",root,30);
+ setGate("gateActionState",action,30);setGate("gateEffectState",effect,20);
+
+ const gaps={
+  opening:rows.filter(x=>Number(x.opening_quality)<12).length,
+  root:rows.filter(x=>Number(x.root_cause_quality)<15).length,
+  action:rows.filter(x=>Number(x.corrective_action_quality)<15).length,
+  effectiveness:rows.filter(x=>Number(x.effectiveness_quality)<10).length,
+  evidence:rows.filter(x=>x.analysis_state==="VISION_REVIEW_REQUIRED").length
+ };
+ const priorities=[
+  {k:"root",n:gaps.root,title:"Root Cause Gate",desc:"เคสที่ Root Cause ต่ำกว่าเกณฑ์ ต้อง challenge ว่าเจอสาเหตุระบบจริงหรือยัง",level:"risk"},
+  {k:"action",n:gaps.action,title:"System Action Gate",desc:"เคสที่ Action ยังไม่แข็งแรง ต้องตรวจ Cause ↔ Action และหลีกเลี่ยงการปิดด้วยการสื่อสารอย่างเดียว",level:"risk"},
+  {k:"effectiveness",n:gaps.effectiveness,title:"Effectiveness Gate",desc:"ห้ามเท่ากับ Action Completed ต้องมี verification และ recurrence check",level:"warn"},
+  {k:"opening",n:gaps.opening,title:"Opening Quality",desc:"ย้อนตรวจ Problem Statement, Evidence และ Requirement ตั้งแต่ต้นน้ำ",level:"warn"},
+  {k:"evidence",n:gaps.evidence,title:"Evidence Completeness",desc:"หลักฐานภาพ/ไฟล์แนบที่ยังต้องทบทวนก่อน Final QMR Verdict",level:"review"}
+ ].sort((a,b)=>b.n-a.n);
+ $("qmrPriorities").innerHTML=priorities.map((x,i)=>'<button class="priority '+x.level+'" data-compass-action="'+x.k+'"><span class="priority-rank">'+(i+1)+'</span><span class="priority-copy"><b>'+esc(x.title)+'</b><small>'+esc(x.desc)+'</small></span><strong>'+fmt(x.n)+'</strong></button>').join("");
+
+ const verdicts=data.meta?.verdicts||{},weak=(verdicts.WEAK_CLOSURE_RISK||0),rootGap=(verdicts.ROOT_CAUSE_GAP_RISK||0),effGap=(verdicts.EFFECTIVENESS_GAP_RISK||0);
+ const weakTermCases=rows.filter(x=>(x.weak_action_hits||[]).length).length;
+ const radar=[
+  ["Root Cause Gap",rootGap,"CAR ที่ต้อง challenge สาเหตุ"],
+  ["Weak Closure",weak,"เสี่ยงปิดด้วย Action ที่ไม่เปลี่ยนระบบ"],
+  ["Effectiveness Gap",effGap,"ดำเนินการแล้ว แต่หลักฐานประสิทธิผลยังไม่พอ"],
+  ["Communication-only signal",weakTermCases,"พบคำประเภท อบรม/KYT/เน้นย้ำ/กำชับ"],
+  ["Evidence review",gaps.evidence,"ต้องตรวจหลักฐานภาพก่อน Final Verdict"]
+ ];
+ $("riskRadar").innerHTML=radar.map(x=>'<div class="radar-row"><div><b>'+esc(x[0])+'</b><small>'+esc(x[2])+'</small></div><strong>'+fmt(x[1])+'</strong></div>').join("");
+
+ document.querySelectorAll("[data-compass-action]").forEach(btn=>btn.addEventListener("click",()=>{
+   S.compassMode=btn.dataset.compassAction||"";
+   if($("auditFilter")) $("auditFilter").value="";
+   S.page=1;applyFilters();
+   $("explorer").scrollIntoView({behavior:"smooth",block:"start"});
+ }));
+}
 
 function buildExecutive(meta){
  const a=ytd(2568),b=ytd(2569),totA=a.length,totB=b.length;
@@ -87,20 +150,29 @@ function buildAnalysis(){
 function fillSelect(id,vals){$(id).innerHTML+=[...new Set(vals.filter(Boolean))].sort().map(v=>'<option value="'+esc(v)+'">'+esc(v)+'</option>').join("");}
 function initExplorer(){
  fillSelect("categoryFilter",S.cases.map(x=>x.category));fillSelect("severityFilter",S.cases.map(x=>x.severity));fillSelect("statusFilter",S.cases.map(x=>x.status));
- ["searchInput","yearFilter","categoryFilter","severityFilter","statusFilter"].forEach(id=>$(id).addEventListener(id==="searchInput"?"input":"change",()=>{S.page=1;applyFilters();}));
- $("clearFilters").addEventListener("click",()=>{$("searchInput").value="";["yearFilter","categoryFilter","severityFilter","statusFilter"].forEach(id=>$(id).value="");S.page=1;applyFilters();});
+ ["searchInput","yearFilter","categoryFilter","severityFilter","statusFilter","auditFilter"].forEach(id=>$(id).addEventListener(id==="searchInput"?"input":"change",()=>{S.compassMode="";S.page=1;applyFilters();}));
+ $("clearFilters").addEventListener("click",()=>{$("searchInput").value="";["yearFilter","categoryFilter","severityFilter","statusFilter","auditFilter"].forEach(id=>$(id).value="");S.compassMode="";S.page=1;applyFilters();});
  $("prevPage").addEventListener("click",()=>{if(S.page>1){S.page--;renderTable();}});
  $("nextPage").addEventListener("click",()=>{if(S.page<Math.ceil(S.filtered.length/S.pageSize)){S.page++;renderTable();}});
  applyFilters();
 }
 function applyFilters(){
- const q=$("searchInput").value.trim().toLowerCase(),yr=$("yearFilter").value,cat=$("categoryFilter").value,sev=$("severityFilter").value,st=$("statusFilter").value;
- S.filtered=S.cases.filter(c=>{const i=c.integrity||{};const hay=[c.case_id,c.car_code,c.car_number,c.recipient_scope,c.receiving_unit,c.receiving_best,c.category,c.severity,c.issue_detail,c.requirement,i.verdict,verdictLabel(i.verdict),i.integrity_score,(i.weak_action_hits||[]).join(" ")].join(" ").toLowerCase();return(!q||hay.includes(q))&&(!yr||String(c.year_be)===yr)&&(!cat||c.category===cat)&&(!sev||c.severity===sev)&&(!st||c.status===st);});
+ const q=$("searchInput").value.trim().toLowerCase(),yr=$("yearFilter").value,cat=$("categoryFilter").value,sev=$("severityFilter").value,st=$("statusFilter").value,audit=$("auditFilter").value;
+ S.filtered=S.cases.filter(c=>{
+  const i=c.integrity||{},hay=[c.case_id,c.car_code,c.car_number,c.recipient_scope,c.receiving_unit,c.receiving_best,c.category,c.severity,c.issue_detail,c.requirement,i.verdict,verdictLabel(i.verdict),i.integrity_score,(i.weak_action_hits||[]).join(" ")].join(" ").toLowerCase();
+  let special=true;
+  if(S.compassMode==="opening")special=Number(i.opening_quality)<12;
+  else if(S.compassMode==="root")special=i.verdict==="ROOT_CAUSE_GAP_RISK"||Number(i.root_cause_quality)<15;
+  else if(S.compassMode==="action")special=i.verdict==="WEAK_CLOSURE_RISK"||Number(i.corrective_action_quality)<15;
+  else if(S.compassMode==="effectiveness")special=i.verdict==="EFFECTIVENESS_GAP_RISK"||Number(i.effectiveness_quality)<10;
+  else if(S.compassMode==="evidence")special=i.analysis_state==="VISION_REVIEW_REQUIRED";
+  return special&&(!q||hay.includes(q))&&(!yr||String(c.year_be)===yr)&&(!cat||c.category===cat)&&(!sev||c.severity===sev)&&(!st||c.status===st)&&(!audit||i.verdict===audit);
+ });
  renderTable();
 }
 function renderTable(){
  const start=(S.page-1)*S.pageSize,rows=S.filtered.slice(start,start+S.pageSize),pages=Math.max(1,Math.ceil(S.filtered.length/S.pageSize));
- $("resultCount").textContent="พบ "+fmt(S.filtered.length)+" CAR";$("pageText").textContent="หน้า "+S.page+" / "+pages;$("prevPage").disabled=S.page<=1;$("nextPage").disabled=S.page>=pages;
+ $("resultCount").textContent="พบ "+fmt(S.filtered.length)+" CAR"+(S.compassMode?" · QMR Focus: "+S.compassMode:"");$("pageText").textContent="หน้า "+S.page+" / "+pages;$("prevPage").disabled=S.page<=1;$("nextPage").disabled=S.page>=pages;
  $("caseRows").innerHTML=rows.map(c=>{const i=c.integrity||{};return '<tr data-id="'+esc(c.case_id)+'"><td><b>'+esc(c.case_id)+'</b><br><small>'+esc(c.car_code||"")+'</small></td><td>'+esc(c.issue_date||"—")+'</td><td>'+esc(c.receiving_best||"—")+'</td><td>'+esc(c.category||"—")+'</td><td><span class="chip sev-'+esc(c.severity)+'">'+esc(c.severity||"—")+'</span></td><td><span class="chip status-'+esc(c.status)+'">'+esc(c.status)+'</span></td><td><span class="score '+(i.integrity_score>=80?"score-good":i.integrity_score>=60?"score-mid":"score-risk")+'">'+esc(i.integrity_score??"—")+'</span></td><td><span class="audit-chip '+verdictClass(i.verdict)+'">'+esc(verdictLabel(i.verdict))+'</span></td><td>›</td></tr>'}).join("");
  document.querySelectorAll("#caseRows tr").forEach(tr=>tr.addEventListener("click",()=>openCase(tr.dataset.id)));
 }
@@ -121,5 +193,5 @@ function openCase(id){
  $("caseDetail").innerHTML=h;$("modal").classList.add("open");$("modal").setAttribute("aria-hidden","false");
 }
 function initModal(){document.querySelectorAll("[data-close]").forEach(x=>x.addEventListener("click",()=>{$("modal").classList.remove("open");$("modal").setAttribute("aria-hidden","true");}));document.addEventListener("keydown",e=>{if(e.key==="Escape")$("modal").classList.remove("open");});}
-async function boot(){try{const [res,ires]=await Promise.all([fetch("./cases-public.json",{cache:"no-store"}),fetch("./car-integrity-public.json",{cache:"no-store"})]);if(!res.ok)throw new Error("Case data "+res.status);if(!ires.ok)throw new Error("Integrity data "+ires.status);const data=await res.json(),integ=await ires.json();S.integrityMeta=integ.meta;S.integrity=new Map(integ.cases.map(x=>[x.case_id,x]));S.cases=data.cases.map(c=>({...c,integrity:S.integrity.get(c.case_id)||null}));initTabs();buildExecutive(data.meta);buildIntegrity(integ);buildAnalysis();initExplorer();initModal();}catch(e){document.body.innerHTML='<div style="padding:40px;color:white;font-family:sans-serif"><h2>CAR Digital Twin</h2><p>โหลดข้อมูลไม่สำเร็จ: '+esc(e.message)+'</p></div>';}}
+async function boot(){try{const [res,ires]=await Promise.all([fetch("./cases-public.json",{cache:"no-store"}),fetch("./car-integrity-public.json",{cache:"no-store"})]);if(!res.ok)throw new Error("Case data "+res.status);if(!ires.ok)throw new Error("Integrity data "+ires.status);const data=await res.json(),integ=await ires.json();S.integrityMeta=integ.meta;S.integrity=new Map(integ.cases.map(x=>[x.case_id,x]));S.cases=data.cases.map(c=>({...c,integrity:S.integrity.get(c.case_id)||null}));initTabs();buildCompass(integ);buildExecutive(data.meta);buildIntegrity(integ);buildAnalysis();initExplorer();initModal();}catch(e){document.body.innerHTML='<div style="padding:40px;color:white;font-family:sans-serif"><h2>QMR Compass · CAR Digital Twin</h2><p>โหลดข้อมูลไม่สำเร็จ: '+esc(e.message)+'</p></div>';}}
 boot();
