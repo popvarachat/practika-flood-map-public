@@ -140,10 +140,38 @@ function renderNCFlowCase(id){
  $("ncChainSummary").textContent=x.chain_summary||"—";
  $("ncDecisionBadge").className="nc-decision "+ncDecisionClass(x.qmr_decision);
  $("ncDecisionBadge").textContent=ncDecisionLabel(x.qmr_decision);
- const labels=["ต้นน้ำ","วิเคราะห์","แก้ระบบ","ปิด/ทวนสอบ"];
- $("ncFlowMap").innerHTML=(x.stages||[]).map((s,i)=>
-   '<article class="nc-node '+esc(s.status)+'"><div class="nc-node-head"><span>'+labels[i]+'</span><b>'+ncStatusLabel(s.status)+'</b></div><h4>'+esc(s.title)+'</h4><div class="nc-node-block"><small>พลาดตรงไหน</small><p>'+esc(s.finding)+'</p></div><div class="nc-node-block"><small>ทำไมสำคัญ</small><p>'+esc(s.why_it_matters)+'</p></div><div class="nc-node-block next"><small>ลามต่อไป</small><p>'+esc(s.next_risk)+'</p></div>'+(s.score!=null?'<div class="nc-score">Score '+esc(s.score)+'</div>':'')+'</article>'
- ).join("");
+
+ const s=x.stages||[],op=s[0]||{},root=s[1]||{},act=s[2]||{},eff=s[3]||{};
+ const issue=(c?.issue_detail||"").trim();
+ const issueShort=issue?issue.slice(0,120)+(issue.length>120?"…":""):"ดูรายละเอียดใน CAR";
+ const evidenceStatus=x.visual_review_required?"warn":"pass";
+ const evidenceTitle=x.visual_review_required?"Evidence ต้องทบทวน":"Evidence พร้อมใช้";
+ const evidenceBody=(x.whywhy_present?"Why-Why ✓":"Why-Why ?")+" · "+((x.system_action_hits||[]).length?"System control ✓":"System control ?")+" · "+(x.visual_review_required?"Visual review pending":"Visual evidence clear");
+ const qmrCls=ncDecisionClass(x.qmr_decision);
+ const qmrStatus=x.qmr_decision==="CLOSE_CANDIDATE"?"pass":x.qmr_decision==="VERIFY_BEFORE_CLOSE"?"warn":"fail";
+
+ $("ncFlowMap").innerHTML=
+  '<div class="nc-network" aria-label="NC Flow architecture map">'+
+    '<svg class="nc-network-lines" viewBox="0 0 1000 610" preserveAspectRatio="none" aria-hidden="true">'+
+      '<defs><marker id="arrowBlue" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#5eb6ff"/></marker><marker id="arrowTeal" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#61e0d1"/></marker><marker id="arrowRed" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#ff7b86"/></marker></defs>'+
+      '<path class="edge blue" d="M185 115 C225 115 230 95 265 95" marker-end="url(#arrowBlue)"/>'+
+      '<path class="edge blue" d="M435 105 C470 105 480 140 505 140" marker-end="url(#arrowBlue)"/>'+
+      '<path class="edge teal" d="M665 145 C705 145 710 100 735 100" marker-end="url(#arrowTeal)"/>'+
+      '<path class="edge teal" d="M585 215 C575 285 520 330 505 360" marker-end="url(#arrowTeal)"/>'+
+      '<path class="edge teal" d="M820 185 C790 285 735 335 700 365" marker-end="url(#arrowTeal)"/>'+
+      '<path class="edge teal" d="M585 415 C610 415 620 405 640 405" marker-end="url(#arrowTeal)"/>'+
+      '<path class="edge blue" d="M790 410 C835 410 845 420 865 420" marker-end="url(#arrowBlue)"/>'+
+      (x.qmr_decision==="CLOSE_CANDIDATE"?'':'<path class="edge red loop" d="M940 475 C980 555 860 585 630 575 C485 570 475 315 565 225" marker-end="url(#arrowRed)"/>')+
+    '</svg>'+
+    '<article class="arch-node pos-finding neutral"><div class="arch-kicker">FINDING</div><h4>'+esc(id)+'</h4><p>'+esc(issueShort)+'</p><small>'+esc((c?.category||"CAR")+" · "+(c?.severity||"—"))+'</small></article>'+
+    '<article class="arch-node pos-opening '+esc(op.status||"warn")+'"><div class="arch-kicker">GATE A · OPENING</div><h4>Qualification</h4><p>'+esc(op.finding||"—")+'</p><span>'+ncStatusLabel(op.status||"warn")+(op.score!=null?" · "+op.score+"/20":"")+'</span></article>'+
+    '<article class="arch-node pos-root '+esc(root.status||"warn")+'"><div class="arch-kicker">GATE B1 · ANALYSIS</div><h4>Root Cause</h4><p>'+esc(root.finding||"—")+'</p><span>'+ncStatusLabel(root.status||"warn")+(root.score!=null?" · "+root.score+"/30":"")+'</span></article>'+
+    '<article class="arch-node pos-action '+esc(act.status||"warn")+'"><div class="arch-kicker">GATE B2 · CONTROL</div><h4>Corrective Action</h4><p>'+esc(act.finding||"—")+'</p><span>'+ncStatusLabel(act.status||"warn")+(act.score!=null?" · "+act.score+"/30":"")+'</span></article>'+
+    '<article class="arch-node pos-evidence '+evidenceStatus+'"><div class="arch-kicker">EVIDENCE</div><h4>'+esc(evidenceTitle)+'</h4><p>'+esc(evidenceBody)+'</p><span>'+esc(x.visual_review_required?"VERIFY":"READY")+'</span></article>'+
+    '<article class="arch-node pos-effect '+esc(eff.status||"warn")+'"><div class="arch-kicker">GATE C · VERIFY</div><h4>Effectiveness</h4><p>'+esc(eff.finding||"—")+'</p><span>'+ncStatusLabel(eff.status||"warn")+(eff.score!=null?" · "+eff.score+"/20":"")+'</span></article>'+
+    '<article class="arch-node pos-qmr '+qmrStatus+'"><div class="arch-kicker">HUMAN GATE · QMR</div><h4>'+esc(ncDecisionLabel(x.qmr_decision))+'</h4><p>'+esc(x.chain_summary||"—")+'</p><span class="decision-dot '+qmrCls+'">QMR DECISION</span></article>'+
+  '</div>';
+
  const actions={
   REOPEN_RECOMMENDED:["QMR Action: REOPEN / VERIFY ใหม่","CAR ถูกปิดแล้วแต่ยังพบ Process Failure อย่างน้อย 1 Gate — ควรย้อนตรวจ Root Cause ↔ Action ↔ Effectiveness ก่อนยอมรับการปิด"],
   RETURN_FOR_CORRECTION:["QMR Action: RETURN","ยังไม่ควรเดินต่อ ให้เจ้าของ CAR แก้จุดที่ Fail ก่อนส่งกลับมา QMR Gate"],

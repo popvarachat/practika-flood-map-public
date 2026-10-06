@@ -70,3 +70,28 @@ button,input,select{font:inherit}.topbar{position:sticky;top:0;z-index:20;displa
 .mini-nc-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.mini-nc{border:1px solid var(--line);border-radius:11px;padding:10px;background:#0a2032}.mini-nc.fail{border-left:3px solid var(--red)}.mini-nc.warn{border-left:3px solid var(--amber)}.mini-nc.pass{border-left:3px solid var(--green)}.mini-nc b,.mini-nc small{display:block}.mini-nc small{color:var(--muted);font-size:9px;margin-top:2px}.mini-nc p{margin:5px 0 0;color:#c3d2de;font-size:10px;line-height:1.45}
 @media(max-width:900px){.nc-case-toolbar{grid-template-columns:1fr 1fr}.nc-case-toolbar button{grid-column:1/-1}.nc-stage-grid,.nc-flow-map{grid-template-columns:1fr}.nc-stage-card:after,.nc-node:after{display:none}}
 @media(max-width:620px){.nc-case-toolbar{grid-template-columns:1fr}.nc-case-head{flex-direction:column}.mini-nc-grid{grid-template-columns:1fr}}
+
+/* Architecture-style NC Flow inspired by the supplied example */
+.nc-flow-map{display:block!important;margin-top:18px;position:relative;overflow-x:auto;overflow-y:hidden}
+.nc-network{position:relative;min-width:1080px;height:650px;border:1px solid rgba(74,163,255,.18);border-radius:20px;background:
+ radial-gradient(circle at 23% 16%,rgba(74,163,255,.08),transparent 28%),
+ radial-gradient(circle at 70% 58%,rgba(97,224,209,.07),transparent 30%),
+ linear-gradient(180deg,rgba(6,18,31,.96),rgba(5,15,26,.98));box-shadow:inset 0 0 60px rgba(0,0,0,.22)}
+.nc-network:before{content:"";position:absolute;inset:0;background-image:linear-gradient(rgba(86,129,160,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(86,129,160,.035) 1px,transparent 1px);background-size:32px 32px;pointer-events:none}
+.nc-network-lines{position:absolute;inset:0;width:100%;height:100%;z-index:1;pointer-events:none}
+.nc-network-lines .edge{fill:none;stroke-width:1.7;stroke-dasharray:7 7;opacity:.82}
+.nc-network-lines .edge.blue{stroke:#5eb6ff}.nc-network-lines .edge.teal{stroke:#61e0d1}.nc-network-lines .edge.red{stroke:#ff7b86}.nc-network-lines .edge.loop{stroke-dasharray:5 8;opacity:.7}
+.arch-node{position:absolute;z-index:2;width:185px;min-height:130px;border:1px solid #315b7b;border-radius:14px;padding:13px 14px;background:linear-gradient(180deg,rgba(14,35,54,.98),rgba(8,25,40,.98));box-shadow:0 15px 36px rgba(0,0,0,.24);transition:.18s ease}
+.arch-node:hover{transform:translateY(-2px);box-shadow:0 19px 42px rgba(0,0,0,.3)}
+.arch-node:before{content:"";position:absolute;left:0;top:12px;bottom:12px;width:3px;border-radius:3px;background:#5eb6ff}
+.arch-node.neutral:before{background:#5eb6ff}.arch-node.pass{border-color:#2d6650}.arch-node.pass:before{background:#62d79c}
+.arch-node.warn{border-color:#775e31}.arch-node.warn:before{background:#ffca6a}
+.arch-node.fail{border-color:#7e3d45}.arch-node.fail:before{background:#ff7b86}
+.arch-kicker{font-size:9px;font-weight:900;letter-spacing:.12em;color:#72c9c1;text-transform:uppercase}
+.arch-node h4{margin:5px 0 7px;font-size:15px;line-height:1.25}.arch-node p{margin:0;color:#b8c9d7;font-size:10.5px;line-height:1.45;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden}
+.arch-node>span,.arch-node>small{display:inline-flex;margin-top:9px;border:1px solid rgba(94,182,255,.18);border-radius:999px;padding:4px 7px;color:#9fb8c9;font-size:9px;font-weight:700}
+.arch-node.pass>span{color:#c9f6e1;border-color:#2d6650}.arch-node.warn>span{color:#ffe2ad;border-color:#775e31}.arch-node.fail>span{color:#ffd2d6;border-color:#7e3d45}
+.decision-dot.good{color:#c9f6e1!important;border-color:#2d6650!important}.decision-dot.warn{color:#ffe2ad!important;border-color:#775e31!important}.decision-dot.risk{color:#ffd2d6!important;border-color:#7e3d45!important}
+.pos-finding{left:2.5%;top:11%}.pos-opening{left:25%;top:5%}.pos-root{left:48%;top:13%}.pos-action{left:70.5%;top:5%}.pos-evidence{left:38%;top:58%}.pos-effect{left:61.5%;top:56%}.pos-qmr{left:81%;top:57%;width:175px}
+.nc-case-card .card-title span{color:#77a8c8}
+@media(max-width:900px){.nc-flow-map{overflow-x:auto}.nc-network{min-width:1040px}.nc-network-lines{display:block}.arch-node{width:178px}.pos-qmr{width:170px}}
