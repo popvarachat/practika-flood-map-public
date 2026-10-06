@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="./styles.css?v=53288ce">
+<link rel="stylesheet" href="./styles.css?v=car-integrity-v2">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
 </head>
 <body>
@@ -27,12 +27,13 @@
     <div class="hero-trust">
       <div><span>CASE TWIN</span><strong id="heroCases">—</strong></div>
       <div><span>DOCUMENT TWIN</span><strong id="heroDocs">—</strong></div>
-      <div><span>TRACEABILITY</span><strong>100%</strong></div>
+      <div><span>PDF / DB COVERAGE</span><strong id="heroCoverage">—</strong></div>
     </div>
   </section>
 
   <nav class="tabs" aria-label="dashboard sections">
     <button class="tab active" data-target="executive">Executive</button>
+    <button class="tab" data-target="integrity">Integrity</button>
     <button class="tab" data-target="analysis">Analysis</button>
     <button class="tab" data-target="explorer">CAR Explorer</button>
     <button class="tab" data-target="dataTrust">Data Trust</button>
@@ -53,6 +54,30 @@
     <article class="card insight-card">
       <div class="card-title"><b>Management Signals</b><span>อ่านจาก Digital Twin</span></div>
       <div id="signals" class="signal-grid"></div>
+    </article>
+  </section>
+
+
+  <section id="integrity" class="section-block">
+    <div class="section-head"><div><span class="eyebrow">CAR INTEGRITY AUDIT</span><h3>เปิดถูกโจทย์ · Root Cause ตรง · แก้ด้วยระบบ · ปิดด้วย Effectiveness</h3></div><span id="integritySnapshot" class="hint">Loading…</span></div>
+    <div class="kpis">
+      <article class="kpi"><span>Avg Integrity Score</span><b id="kpiIntegrityAvg">—</b><small>Rule-screen 100 คะแนน · ใช้เป็น Audit Priority ไม่ใช่คำตัดสินสุดท้าย</small></article>
+      <article class="kpi risk"><span>Weak Closure Risk</span><b id="kpiWeakClosure">—</b><small>Action ยังไม่แสดง System Control เพียงพอ</small></article>
+      <article class="kpi risk"><span>Root Cause Gap</span><b id="kpiRootGap">—</b><small>หลักฐาน Root Cause ยังไม่พอหรือยังไม่ลึก</small></article>
+      <article class="kpi"><span>Vision Review Queue</span><b id="kpiVisionQueue">—</b><small>ภาพ/ไฟล์แนบที่ต้องอ่านด้วย Vision ก่อน Final Verdict</small></article>
+    </div>
+    <div class="grid2">
+      <article class="card chart-card"><div class="card-title"><b>CAR Audit Verdict</b><span>คัดลำดับเคสที่ต้องทบทวน</span></div><canvas id="verdictChart"></canvas></article>
+      <article class="card"><div class="card-title"><b>Closure Red Flags</b><span>คำที่ไม่ควรใช้ปิด CAR ลำพัง</span></div><div id="weakTerms" class="rank-list"></div></article>
+    </div>
+    <article class="card insight-card">
+      <div class="card-title"><b>QMR Closure Gate</b><span>Systemic closure principle</span></div>
+      <div class="signal-grid">
+        <div class="signal"><b>1 · Opening</b><p>Problem statement + evidence + requirement ต้องตั้งโจทย์ให้ถูกก่อนออก CAR</p></div>
+        <div class="signal warn"><b>2 · Root Cause</b><p>ห้ามหยุดที่ “คนลืม / ไม่ระวัง / สื่อสารไม่ทั่วถึง” ถ้าระบบยังเปิดช่องให้เกิดซ้ำ</p></div>
+        <div class="signal warn"><b>3 · Corrective Action</b><p>KYT / Morning Talk / กำชับ / อบรม ไม่ใช่ Systemic Closure เว้นแต่พิสูจน์ว่า competency gap คือ root cause จริง</p></div>
+        <div class="signal good"><b>4 · Effectiveness</b><p>ต้องมีหลักฐานทวนสอบหลังใช้มาตรการ และเช็ค recurrence ก่อน QMR อนุมัติปิด</p></div>
+      </div>
     </article>
   </section>
 
@@ -77,7 +102,7 @@
     </div>
     <div class="table-wrap card">
       <table>
-        <thead><tr><th>CAR</th><th>วันที่ออก</th><th>หน่วยงานรับ</th><th>Category</th><th>Severity</th><th>Status</th><th></th></tr></thead>
+        <thead><tr><th>CAR</th><th>วันที่ออก</th><th>หน่วยงานรับ</th><th>Category</th><th>Severity</th><th>Status</th><th>Integrity</th><th>Audit Verdict</th><th></th></tr></thead>
         <tbody id="caseRows"></tbody>
       </table>
       <div class="pager"><button id="prevPage">← ก่อนหน้า</button><span id="pageText"></span><button id="nextPage">ถัดไป →</button></div>
@@ -88,9 +113,9 @@
     <div class="section-head"><div><span class="eyebrow">DATA GOVERNANCE</span><h3>Why this is a Digital Twin</h3></div><span class="hint">Case + Document + Lineage + Quality</span></div>
     <div class="trust-grid">
       <article class="card"><b>Case Twin</b><p>หนึ่ง CAR = หนึ่ง canonical entity มีวันที่ หน่วยงาน Category Severity Status และ Issue Detail</p></article>
-      <article class="card"><b>Document Twin</b><p>เก็บ revision timeline ของเอกสารแต่ละ CAR เพื่อเห็นวิวัฒนาการจาก original → extension → closed</p></article>
+      <article class="card"><b>Document Twin</b><p>อ่าน PDF ทุก revision ลงฐานข้อมูล พร้อม Page Text, Form Widgets, Annotation และ File Attachment ไม่ได้หยุดแค่ชื่อไฟล์หรือ metadata</p></article>
       <article class="card"><b>Source Lineage</b><p>Internal Twin เก็บ Drive lineage เต็มรูปแบบ ส่วน Public View ซ่อน URL / Drive ID และข้อมูลระบุตัวตน</p></article>
-      <article class="card"><b>Data Quality</b><p>ข้อมูลต้นฉบับที่ว่างหรือขัดแย้งจะถูก flag ไม่เดาหรือแก้เงียบ</p></article>
+      <article class="card"><b>Data Quality</b><p>ข้อมูลว่าง/ขัดแย้งถูก flag และภาพหรือ attachment ที่ text extraction อ่านไม่ครบถูกส่งเข้า Vision Review Queue แทนการเดา</p></article>
     </div>
     <div class="public-note"><b>Public-safe publication policy:</b> ชื่อบุคคล อีเมล เบอร์โทร Drive URL/File ID, raw form fields และหลักฐานภายในไม่ถูกเผยแพร่ใน GitHub Pages</div>
   </section>
@@ -105,5 +130,5 @@
 </div>
 
 <footer>Source: PRACTIKA CAR Digital Twin · Public-safe redacted snapshot · GitHub Pages</footer>
-<script src="./app.js?v=53288ce"></script>
+<script src="./app.js?v=car-integrity-v2"></script>
 </body></html>
