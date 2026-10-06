@@ -95,3 +95,22 @@ button,input,select{font:inherit}.topbar{position:sticky;top:0;z-index:20;displa
 .pos-finding{left:2.5%;top:11%}.pos-opening{left:25%;top:5%}.pos-root{left:48%;top:13%}.pos-action{left:70.5%;top:5%}.pos-evidence{left:38%;top:58%}.pos-effect{left:61.5%;top:56%}.pos-qmr{left:81%;top:57%;width:175px}
 .nc-case-card .card-title span{color:#77a8c8}
 @media(max-width:900px){.nc-flow-map{overflow-x:auto}.nc-network{min-width:1040px}.nc-network-lines{display:block}.arch-node{width:178px}.pos-qmr{width:170px}}
+
+/* Click-through NC node detail */
+.arch-node.clickable{cursor:pointer;outline:none}
+.arch-node.clickable:after{content:"DETAIL";position:absolute;right:10px;top:9px;font-size:7px;letter-spacing:.1em;color:#6f91a7;opacity:.75}
+.arch-node.clickable:hover,.arch-node.clickable:focus-visible{border-color:#6ec7ff;box-shadow:0 0 0 2px rgba(94,182,255,.14),0 18px 44px rgba(0,0,0,.34)}
+.arch-node.selected{box-shadow:0 0 0 2px rgba(94,182,255,.28),0 0 28px rgba(94,182,255,.13),0 18px 44px rgba(0,0,0,.34)}
+.nc-node-detail{margin-top:14px;border:1px solid #294b66;border-radius:16px;background:linear-gradient(180deg,rgba(11,31,48,.96),rgba(7,23,36,.98));padding:15px}
+.nc-detail-empty{color:var(--muted);font-size:12px;text-align:center;padding:10px}
+.nc-detail-head{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;padding-bottom:11px;border-bottom:1px solid rgba(45,78,102,.65)}
+.nc-detail-head h4{margin:4px 0 2px;font-size:18px}.nc-detail-head p{margin:0;color:var(--muted);font-size:11px}
+.nc-detail-head button{border:1px solid #3974a1;background:#13344f;color:#e9f6ff;border-radius:10px;padding:9px 12px;font-weight:800;cursor:pointer;white-space:nowrap}
+.nc-detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+.nc-detail-grid>div{border:1px solid rgba(40,70,93,.8);border-radius:12px;padding:11px;background:#091d2d;min-height:80px}
+.nc-detail-grid small{display:block;color:#72c9c1;font-size:9px;font-weight:900;letter-spacing:.06em;text-transform:uppercase}
+.nc-detail-grid p{margin:5px 0 0;color:#c9d7e2;font-size:11px;line-height:1.55;white-space:pre-wrap}
+.nc-evidence-chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:7px}
+.nc-evidence-chip{display:inline-flex;border:1px solid #315b7b;border-radius:999px;padding:4px 7px;color:#c9eaff;background:rgba(94,182,255,.06);font-size:9px}
+.nc-evidence-chip.muted{color:#8299aa;border-color:#294357}
+@media(max-width:760px){.nc-detail-head{flex-direction:column}.nc-detail-grid{grid-template-columns:1fr}}
