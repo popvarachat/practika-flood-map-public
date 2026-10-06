@@ -1,4 +1,4 @@
-const S={cases:[],filtered:[],page:1,pageSize:25,charts:[]};
+const S={cases:[],filtered:[],page:1,pageSize:25,charts:[],integrity:new Map(),integrityMeta:null};
 const $=id=>document.getElementById(id);
 const esc=s=>String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]));
 const fmt=n=>new Intl.NumberFormat("th-TH").format(n||0);
@@ -38,6 +38,40 @@ function buildExecutive(meta){
  $("signals").innerHTML=sig.map(x=>'<div class="signal '+x[0]+'"><b>'+esc(x[1])+'</b><p>'+esc(x[2])+'</p></div>').join("");
 }
 
+
+function verdictLabel(v){
+ const m={
+  "WEAK_CLOSURE_RISK":"Weak Closure",
+  "ROOT_CAUSE_GAP_RISK":"Root Cause Gap",
+  "EFFECTIVENESS_GAP_RISK":"Effectiveness Gap",
+  "SYSTEMIC_CLOSURE_CANDIDATE":"Systemic Candidate",
+  "EVIDENCE_INCOMPLETE":"Vision Review",
+  "REVIEW_REQUIRED":"Review Required"
+ };
+ return m[v]||v||"Not analyzed";
+}
+function verdictClass(v){
+ if(v==="SYSTEMIC_CLOSURE_CANDIDATE")return "good";
+ if(v==="EVIDENCE_INCOMPLETE")return "vision";
+ if(v==="WEAK_CLOSURE_RISK"||v==="ROOT_CAUSE_GAP_RISK"||v==="EFFECTIVENESS_GAP_RISK")return "risk";
+ return "review";
+}
+function buildIntegrity(data){
+ const m=data.meta||{}, vs=m.verdicts||{};
+ $("heroCoverage").textContent=fmt(m.documents||0)+" PDF";
+ $("integritySnapshot").textContent="DB "+fmt(m.documents||0)+" PDF · "+fmt(m.attachments||0)+" attachments · Vision queue "+fmt(m.vision_queue||0);
+ $("kpiIntegrityAvg").textContent=(m.avg_integrity_score??"—")+(m.avg_integrity_score!=null?" / 100":"");
+ $("kpiWeakClosure").textContent=fmt(vs.WEAK_CLOSURE_RISK||0);
+ $("kpiRootGap").textContent=fmt(vs.ROOT_CAUSE_GAP_RISK||0);
+ $("kpiVisionQueue").textContent=fmt(m.vision_queue||0);
+ const order=["WEAK_CLOSURE_RISK","ROOT_CAUSE_GAP_RISK","EFFECTIVENESS_GAP_RISK","REVIEW_REQUIRED","SYSTEMIC_CLOSURE_CANDIDATE","EVIDENCE_INCOMPLETE"];
+ const colors=[COLOR_RED,COLOR_AMBER,"#f0a75d",COLOR_68,COLOR_GREEN,"#9c88ff"];
+ mkChart("verdictChart",{type:"bar",data:{labels:order.map(verdictLabel),datasets:[{label:"CAR",data:order.map(x=>vs[x]||0),backgroundColor:colors,borderColor:colors,borderWidth:1,borderRadius:6}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{display:false}},y:{beginAtZero:true}}}});
+ const wc={};
+ data.cases.forEach(x=>(x.weak_action_hits||[]).forEach(t=>wc[t]=(wc[t]||0)+1));
+ $("weakTerms").innerHTML=Object.entries(wc).sort((a,b)=>b[1]-a[1]).map((x,i)=>'<div class="rank"><span>'+(i+1)+'. '+esc(x[0])+'</span><b>'+fmt(x[1])+' CAR</b></div>').join("")||'<div class="detail-text">ไม่พบคำ Red Flag ใน public-safe rule screen</div>';
+}
+
 function buildAnalysis(){
  const a=ytd(2568),b=ytd(2569);
  const groups=[...new Set(S.cases.flatMap(c=>c.functional_groups))].filter(x=>x!=="Other / Unclassified");
@@ -61,26 +95,31 @@ function initExplorer(){
 }
 function applyFilters(){
  const q=$("searchInput").value.trim().toLowerCase(),yr=$("yearFilter").value,cat=$("categoryFilter").value,sev=$("severityFilter").value,st=$("statusFilter").value;
- S.filtered=S.cases.filter(c=>{const hay=[c.case_id,c.car_code,c.car_number,c.recipient_scope,c.receiving_unit,c.receiving_best,c.category,c.severity,c.issue_detail,c.requirement].join(" ").toLowerCase();return(!q||hay.includes(q))&&(!yr||String(c.year_be)===yr)&&(!cat||c.category===cat)&&(!sev||c.severity===sev)&&(!st||c.status===st);});
+ S.filtered=S.cases.filter(c=>{const i=c.integrity||{};const hay=[c.case_id,c.car_code,c.car_number,c.recipient_scope,c.receiving_unit,c.receiving_best,c.category,c.severity,c.issue_detail,c.requirement,i.verdict,verdictLabel(i.verdict),i.integrity_score,(i.weak_action_hits||[]).join(" ")].join(" ").toLowerCase();return(!q||hay.includes(q))&&(!yr||String(c.year_be)===yr)&&(!cat||c.category===cat)&&(!sev||c.severity===sev)&&(!st||c.status===st);});
  renderTable();
 }
 function renderTable(){
  const start=(S.page-1)*S.pageSize,rows=S.filtered.slice(start,start+S.pageSize),pages=Math.max(1,Math.ceil(S.filtered.length/S.pageSize));
  $("resultCount").textContent="พบ "+fmt(S.filtered.length)+" CAR";$("pageText").textContent="หน้า "+S.page+" / "+pages;$("prevPage").disabled=S.page<=1;$("nextPage").disabled=S.page>=pages;
- $("caseRows").innerHTML=rows.map(c=>'<tr data-id="'+esc(c.case_id)+'"><td><b>'+esc(c.case_id)+'</b><br><small>'+esc(c.car_code||"")+'</small></td><td>'+esc(c.issue_date||"—")+'</td><td>'+esc(c.receiving_best||"—")+'</td><td>'+esc(c.category||"—")+'</td><td><span class="chip sev-'+esc(c.severity)+'">'+esc(c.severity||"—")+'</span></td><td><span class="chip status-'+esc(c.status)+'">'+esc(c.status)+'</span></td><td>›</td></tr>').join("");
+ $("caseRows").innerHTML=rows.map(c=>{const i=c.integrity||{};return '<tr data-id="'+esc(c.case_id)+'"><td><b>'+esc(c.case_id)+'</b><br><small>'+esc(c.car_code||"")+'</small></td><td>'+esc(c.issue_date||"—")+'</td><td>'+esc(c.receiving_best||"—")+'</td><td>'+esc(c.category||"—")+'</td><td><span class="chip sev-'+esc(c.severity)+'">'+esc(c.severity||"—")+'</span></td><td><span class="chip status-'+esc(c.status)+'">'+esc(c.status)+'</span></td><td><span class="score '+(i.integrity_score>=80?"score-good":i.integrity_score>=60?"score-mid":"score-risk")+'">'+esc(i.integrity_score??"—")+'</span></td><td><span class="audit-chip '+verdictClass(i.verdict)+'">'+esc(verdictLabel(i.verdict))+'</span></td><td>›</td></tr>'}).join("");
  document.querySelectorAll("#caseRows tr").forEach(tr=>tr.addEventListener("click",()=>openCase(tr.dataset.id)));
 }
 function openCase(id){
  const c=S.cases.find(x=>x.case_id===id);if(!c)return;
+ const i=c.integrity||{};
  const flags=(c.data_quality_flags||[]).map(x=>'<span class="chip">'+esc(x)+'</span>').join(" ");
  const docs=(c.documents||[]).map(d=>'<div class="doc"><small>'+esc(d.role||"revision")+'<br>'+esc((d.modified||"").slice(0,10))+'</small><div>'+esc(d.title||"Document revision")+'</div></div>').join("");
  let h='<div class="detail-head"><span class="eyebrow">CASE TWIN</span><h2>'+esc(c.case_id)+'</h2><div class="detail-meta"><span class="chip sev-'+esc(c.severity)+'">'+esc(c.severity||"—")+'</span><span class="chip">'+esc(c.category||"—")+'</span><span class="chip status-'+esc(c.status)+'">'+esc(c.status)+'</span></div></div>';
  h+='<div class="detail-grid"><div class="detail-box"><span>CAR Number</span><b>'+esc(c.car_number||"—")+'</b></div><div class="detail-box"><span>ออกให้ / Recipient Scope</span><b>'+esc(c.recipient_scope||"—")+'</b></div><div class="detail-box"><span>Specific Unit</span><b>'+esc(c.receiving_unit||"—")+'</b></div><div class="detail-box"><span>Functional Group</span><b>'+esc((c.functional_groups||[]).join(", "))+'</b></div><div class="detail-box"><span>Problem Date</span><b>'+esc(c.problem_date||"—")+'</b></div><div class="detail-box"><span>Issue Date</span><b>'+esc(c.issue_date||"—")+'</b></div><div class="detail-box"><span>Due Date</span><b>'+esc(c.due_date||"—")+'</b></div><div class="detail-box"><span>Revisions Indexed</span><b>'+fmt((c.documents||[]).length)+'</b></div></div>';
+ if(i.verdict){
+  const weak=(i.weak_action_hits||[]).map(x=>'<span class="chip">'+esc(x)+'</span>').join(" ");
+  h+='<div class="detail-section"><h4>CAR Integrity Audit · Rule Screen</h4><div class="integrity-grid"><div class="integrity-score"><span>Total</span><b>'+esc(i.integrity_score??"—")+'</b><small>/ 100</small></div><div class="mini-score"><span>Opening</span><b>'+esc(i.opening_quality??"—")+'/20</b></div><div class="mini-score"><span>Root Cause</span><b>'+esc(i.root_cause_quality??"—")+'/30</b></div><div class="mini-score"><span>System Action</span><b>'+esc(i.corrective_action_quality??"—")+'/30</b></div><div class="mini-score"><span>Effectiveness</span><b>'+esc(i.effectiveness_quality??"—")+'/20</b></div></div><div class="audit-verdict '+verdictClass(i.verdict)+'"><b>'+esc(verdictLabel(i.verdict))+'</b><span>'+esc(i.analysis_state==="VISION_REVIEW_REQUIRED"?"ยังมีภาพ/หลักฐานที่ต้องอ่านด้วย Vision ก่อน Final Verdict":"ผ่านการ Rule Screen จากข้อมูล PDF/Database")+'</span></div>'+(weak?'<div class="weak-box"><b>Closure Red Flag:</b> '+weak+'</div>':'')+'<div class="public-note">คะแนนนี้ใช้จัดลำดับ Audit Priority ไม่ใช่การอนุมัติปิด CAR อัตโนมัติ — QMR ต้องตรวจ Root Cause ↔ Corrective Action ↔ Effectiveness กับหลักฐานต้นฉบับ</div></div>';
+ }
  h+='<div class="detail-section"><h4>Issue Detail · ข้อมูลจาก CAR</h4><div class="detail-text">'+esc(c.issue_detail||"ไม่มีข้อความในต้นฉบับ")+'</div></div><div class="detail-section"><h4>Requirement / Clause</h4><div class="detail-text">'+esc(c.requirement||"ไม่ระบุ")+'</div></div>';
  if(flags)h+='<div class="detail-section"><h4>Data Quality Flags</h4><div>'+flags+'</div></div>';
  h+='<div class="detail-section"><h4>Document Twin · Revision Timeline</h4><div class="timeline">'+(docs||"<div class='detail-text'>ไม่มี revision metadata</div>")+'</div></div><div class="public-note">Public-safe view: ลิงก์ Google Drive, File ID, raw form fields และข้อมูลระบุตัวตนถูกซ่อน การตรวจหลักฐานต้นฉบับเต็มรูปแบบต้องใช้ Internal/Admin view</div>';
  $("caseDetail").innerHTML=h;$("modal").classList.add("open");$("modal").setAttribute("aria-hidden","false");
 }
 function initModal(){document.querySelectorAll("[data-close]").forEach(x=>x.addEventListener("click",()=>{$("modal").classList.remove("open");$("modal").setAttribute("aria-hidden","true");}));document.addEventListener("keydown",e=>{if(e.key==="Escape")$("modal").classList.remove("open");});}
-async function boot(){try{const res=await fetch("./cases-public.json",{cache:"no-store"});if(!res.ok)throw new Error("Data "+res.status);const data=await res.json();S.cases=data.cases;initTabs();buildExecutive(data.meta);buildAnalysis();initExplorer();initModal();}catch(e){document.body.innerHTML='<div style="padding:40px;color:white;font-family:sans-serif"><h2>CAR Digital Twin</h2><p>โหลดข้อมูลไม่สำเร็จ: '+esc(e.message)+'</p></div>';}}
+async function boot(){try{const [res,ires]=await Promise.all([fetch("./cases-public.json",{cache:"no-store"}),fetch("./car-integrity-public.json",{cache:"no-store"})]);if(!res.ok)throw new Error("Case data "+res.status);if(!ires.ok)throw new Error("Integrity data "+ires.status);const data=await res.json(),integ=await ires.json();S.integrityMeta=integ.meta;S.integrity=new Map(integ.cases.map(x=>[x.case_id,x]));S.cases=data.cases.map(c=>({...c,integrity:S.integrity.get(c.case_id)||null}));initTabs();buildExecutive(data.meta);buildIntegrity(integ);buildAnalysis();initExplorer();initModal();}catch(e){document.body.innerHTML='<div style="padding:40px;color:white;font-family:sans-serif"><h2>CAR Digital Twin</h2><p>โหลดข้อมูลไม่สำเร็จ: '+esc(e.message)+'</p></div>';}}
 boot();
