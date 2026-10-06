@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="./styles.css?v=qmr-compass-v1">
+<link rel="stylesheet" href="./styles.css?v=nc-flow-v1">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
 </head>
 <body>
@@ -33,6 +33,7 @@
 
   <nav class="tabs" aria-label="dashboard sections">
     <button class="tab active" data-target="compass">QMR Compass</button>
+    <button class="tab" data-target="ncFlow">NC Flow</button>
     <button class="tab" data-target="executive">Executive</button>
     <button class="tab" data-target="integrity">Integrity</button>
     <button class="tab" data-target="analysis">Analysis</button>
@@ -137,6 +138,53 @@
     </div>
   </section>
 
+
+  <section id="ncFlow" class="section-block">
+    <div class="section-head">
+      <div><span class="eyebrow">NC FLOW · ALL CAR</span><h3>พลาดตรงไหน → ลามไปพลาดตรงไหนต่อ</h3></div>
+      <span id="ncFlowSnapshot" class="hint">กำลังโหลด 357 CAR…</span>
+    </div>
+
+    <div class="kpis">
+      <article class="kpi risk"><span>Reopen Recommended</span><b id="ncReopen">—</b><small>ปิดแล้วแต่ยังมี Process Failure สำคัญ</small></article>
+      <article class="kpi risk"><span>Return for Correction</span><b id="ncReturn">—</b><small>ยังไม่ควรเดินต่อ ต้องแก้ต้นเหตุ/Action ก่อน</small></article>
+      <article class="kpi"><span>Verify Before Close</span><b id="ncVerify">—</b><small>ยังมี Warning ต้องทวนสอบก่อน QMR Gate</small></article>
+      <article class="kpi"><span>Close Candidate</span><b id="ncClose">—</b><small>ผ่าน Rule Screen ทุก Gate</small></article>
+    </div>
+
+    <article class="card nc-overview">
+      <div class="card-title"><b>Process Failure Map · ทั้งระบบ</b><span>ไม่เรียงเป็นรถไฟ — ดูเป็น 4 จุดควบคุมที่ส่งผลต่อกัน</span></div>
+      <div id="ncAggregateFlow" class="nc-stage-grid"></div>
+    </article>
+
+    <div class="nc-case-toolbar card">
+      <div>
+        <label for="ncCaseSelect">เลือก CAR เพื่อดู NC Flow รายฉบับ</label>
+        <select id="ncCaseSelect"></select>
+      </div>
+      <div>
+        <label for="ncDecisionFilter">กรองตาม QMR Decision</label>
+        <select id="ncDecisionFilter">
+          <option value="">ทุก Decision</option>
+          <option value="REOPEN_RECOMMENDED">Reopen Recommended</option>
+          <option value="RETURN_FOR_CORRECTION">Return for Correction</option>
+          <option value="VERIFY_BEFORE_CLOSE">Verify Before Close</option>
+          <option value="CLOSE_CANDIDATE">Close Candidate</option>
+        </select>
+      </div>
+      <button id="ncOpenCase" type="button">เปิด Case Detail</button>
+    </div>
+
+    <article class="card nc-case-card">
+      <div class="nc-case-head">
+        <div><span class="eyebrow">SELECTED CAR</span><h3 id="ncCaseTitle">—</h3><p id="ncChainSummary">—</p></div>
+        <div id="ncDecisionBadge" class="nc-decision">—</div>
+      </div>
+      <div id="ncFlowMap" class="nc-flow-map"></div>
+      <div id="ncQmrAction" class="qmr-action-box"></div>
+    </article>
+  </section>
+
   <section id="executive" class="section-block">
     <div class="section-head"><div><span class="eyebrow">EXECUTIVE VIEW</span><h3>CAR YOY through 30 Sep</h3></div><span class="hint">Cutoff = วันที่ออก CAR</span></div>
     <div class="kpis">
@@ -236,5 +284,5 @@
 </div>
 
 <footer>Source: PRACTIKA CAR Digital Twin · Public-safe redacted snapshot · GitHub Pages</footer>
-<script src="./app.js?v=qmr-compass-v1"></script>
+<script src="./app.js?v=nc-flow-v1"></script>
 </body></html>
