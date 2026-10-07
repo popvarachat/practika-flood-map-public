@@ -1,20 +1,25 @@
 # GitHub Pages Release Policy
 
-This repository uses a dedicated `pages` branch for production publishing.
+This repository uses **manual, single-job GitHub Pages deployment** for cost and run-efficiency control.
 
-## Working branch
-- Develop and commit on `main`.
-- Multiple commits on `main` do **not** publish the website.
-- Do not point GitHub Pages back to `main`.
+## Working mode
+- Work and commit on `main`.
+- Pushes to `main` do **not** publish automatically.
+- Batch related edits, tests, and fixes before release.
+- Do not re-enable branch-based Pages deployment.
 
 ## Production release
-Publish only after validation / Human Gate by moving the `pages` branch to the approved `main` commit.
-
-Example with GitHub CLI:
+Release only after validation / Human Gate:
 
 ```powershell
-$sha = gh api repos/popvarachat/practika-flood-map-public/git/ref/heads/main --jq '.object.sha'
-gh api -X PATCH repos/popvarachat/practika-flood-map-public/git/refs/heads/pages -f sha=$sha -F force=true
+gh workflow run publish-pages.yml -R popvarachat/practika-flood-map-public --ref main
 ```
 
-One release = one Pages deployment. Batch related changes before moving `pages`.
+The workflow:
+- runs only on `workflow_dispatch`
+- uses one `ubuntu-slim` job
+- uploads only the static site
+- keeps the Pages artifact for 1 day
+- deploys the approved `main` snapshot
+
+One approved release = one Pages workflow run. Avoid repeated release calls for the same commit.
