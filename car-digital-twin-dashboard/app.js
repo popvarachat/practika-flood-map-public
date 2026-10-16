@@ -421,7 +421,7 @@ function openCase(id){
  if(closure){
   const ctl=(closure.registered_controls||[]).map(d=>'<span class="chip">'+esc(d.type+" "+d.code)+'</span>').join(" ");
   const wh=(closure.weak_action_types||[]).map(t=>'<span class="chip">'+esc(t)+'</span>').join(" ");
-  h+='<div class="detail-section"><h4>Closure Trace · Registered Control</h4><div class="audit-verdict '+closureClass(closure.closure_class)+'"><b>'+esc(closureLabel(closure.closure_class))+'</b><span>Score '+esc(closure.closure_score??"—")+'/100</span></div><div class="detail-text">'+esc(closure.rationale||"—")+'</div>'+(ctl?'<div class="weak-box"><b>Drive W:</b> '+ctl+'</div>':'')+(wh?'<div class="weak-box"><b>Weak action signal:</b> '+wh+'</div>':'')+'</div>';
+  h+='<div class="detail-section"><h4>Closure Trace · Drive W Control Link</h4><div class="audit-verdict '+closureClass(closure.closure_class)+'"><b>'+esc(closureLabel(closure.closure_class))+'</b><span>Score '+esc(closure.closure_score??"—")+'/100</span></div><div class="detail-text">'+esc(closure.rationale||"—")+'</div>'+(ctl?'<div class="weak-box"><b>Drive W:</b> '+ctl+'</div>':'')+(wh?'<div class="weak-box"><b>Weak action signal:</b> '+wh+'</div>':'')+'</div>';
  }
  if(flags)h+='<div class="detail-section"><h4>Data Quality Flags</h4><div>'+flags+'</div></div>';
  h+='<div class="detail-section"><h4>Document Twin · Revision Timeline</h4><div class="timeline">'+(docs||"<div class='detail-text'>ไม่มี revision metadata</div>")+'</div></div><div class="public-note">Public-safe view: ลิงก์ Google Drive, File ID, raw form fields และข้อมูลระบุตัวตนถูกซ่อน การตรวจหลักฐานต้นฉบับเต็มรูปแบบต้องใช้ Internal/Admin view</div>';
