@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="./styles.css?v=closure-trace-v4">
+<link rel="stylesheet" href="./styles.css?v=closure-trace-v5">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
 </head>
 <body>
@@ -195,9 +195,9 @@
       <span id="closureTraceSnapshot" class="hint">กำลังเชื่อมโยงเอกสารควบคุม…</span>
     </div>
     <div class="kpis">
-      <article class="kpi"><span>Systemic Closure Supported</span><b id="closureStrong">—</b><small>มี WI/QP ที่ขึ้นทะเบียน + Effectiveness signal</small></article>
-      <article class="kpi"><span>Registered Control · Verify</span><b id="closureVerify">—</b><small>มี WI/FORM/QP รองรับ แต่ยังต้องทวนสอบการใช้จริง/ผลลัพธ์</small></article>
-      <article class="kpi risk"><span>Weak Human Control</span><b id="closureWeak">—</b><small>ปิดด้วยการสื่อสาร/KYT/อบรม/ใบเตือน/เฝ้าระวัง โดยไม่พบ Registered Control</small></article>
+      <article class="kpi"><span>Strong Closure Candidate</span><b id="closureStrong">—</b><small>มี control reference ที่ตรวจเนื้อหาแล้ว + Effectiveness signal · ยังไม่ใช่ Final QMR approval</small></article>
+      <article class="kpi"><span>Control Link · Verify</span><b id="closureVerify">—</b><small>Verified reference + Current Library link ที่ยังต้องพิสูจน์ revision/deployment/effectiveness</small></article>
+      <article class="kpi risk"><span>Weak Human Control</span><b id="closureWeak">—</b><small>ปิดด้วยการสื่อสาร/KYT/อบรม/ใบเตือน/เฝ้าระวัง โดยไม่พบ System Control link</small></article>
       <article class="kpi risk"><span>Control Evidence Gap</span><b id="closureGap">—</b><small>ยังไม่เห็นเส้นเชื่อม Action → WI/FORM/QP ใน Drive W</small></article>
     </div>
     <article class="card closure-policy">
@@ -212,8 +212,9 @@
       <input id="closureSearch" type="search" placeholder="ค้นหา CAR, ปัญหา, WI, FORM, QP…">
       <select id="closureClassFilter">
         <option value="">ทุก Closure Class</option>
-        <option value="SYSTEMIC_CLOSURE_SUPPORTED">Systemic Closure Supported</option>
-        <option value="REGISTERED_CONTROL_BUT_VERIFY">Registered Control · Verify</option>
+        <option value="STRONG_CLOSURE_CANDIDATE">Strong Closure Candidate</option>
+        <option value="VERIFIED_CONTROL_BUT_VERIFY">Verified Control · Verify</option>
+        <option value="CURRENT_CONTROL_LINK_VERIFY">Current Library Link · Verify</option>
         <option value="WEAK_HUMAN_CONTROL_CLOSURE">Weak Human Control</option>
         <option value="CONTROL_EVIDENCE_GAP">Control Evidence Gap</option>
         <option value="REVIEW_REQUIRED">Review Required</option>
@@ -241,7 +242,7 @@
     </div>
     <article class="card w-registry-note">
       <div class="card-title"><b>Drive W Registered Control Index</b><span id="wRegistryMeta">—</span></div>
-      <p>อ่านจาก ISO Center → ระเบียบปฏิบัติ ISO 9001_2015 ขององค์กร → Procedure, WI, Form โดยไม่นับโฟลเดอร์ยกเลิก/รอทำลาย และ Public Web แสดงเฉพาะรหัส/ชื่อ/หมวดเอกสาร ไม่เผยแพร่ path ภายในองค์กร</p>
+      <p>อ่านจาก ISO Center → ระเบียบปฏิบัติ ISO 9001_2015 ขององค์กร → Procedure, WI, Form โดยไม่นับโฟลเดอร์ยกเลิก/รอทำลาย และเทียบกับชุดเอกสาร Customer Complaint ที่เคย text-check + SHA256 แล้ว 48 รหัส <b>Current Library ≠ DCC Master List certification</b> และการมี WI/FORM เดิมอยู่แล้ว ≠ การพิสูจน์ว่า CAR นี้แก้ระบบสำเร็จ</p>
     </article>
   </section>
 
@@ -344,5 +345,5 @@
 </div>
 
 <footer>Source: PRACTIKA CAR Digital Twin · Public-safe redacted snapshot · GitHub Pages</footer>
-<script src="./app.js?v=closure-trace-v4"></script>
+<script src="./app.js?v=closure-trace-v5"></script>
 </body></html>

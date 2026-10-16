@@ -316,8 +316,9 @@ function renderTable(){
 
 function closureLabel(v){
  const m={
-  SYSTEMIC_CLOSURE_SUPPORTED:"Systemic Closure Supported",
-  REGISTERED_CONTROL_BUT_VERIFY:"Registered Control · Verify",
+  STRONG_CLOSURE_CANDIDATE:"Strong Closure Candidate",
+  VERIFIED_CONTROL_BUT_VERIFY:"Verified Control · Verify",
+  CURRENT_CONTROL_LINK_VERIFY:"Current Library Link · Verify",
   WEAK_HUMAN_CONTROL_CLOSURE:"Weak Human Control",
   CONTROL_EVIDENCE_GAP:"Control Evidence Gap",
   REVIEW_REQUIRED:"Review Required",
@@ -326,8 +327,8 @@ function closureLabel(v){
  return m[v]||v||"—";
 }
 function closureClass(v){
- if(v==="SYSTEMIC_CLOSURE_SUPPORTED")return "good";
- if(v==="REGISTERED_CONTROL_BUT_VERIFY"||v==="REVIEW_REQUIRED")return "warn";
+ if(v==="STRONG_CLOSURE_CANDIDATE")return "good";
+ if(v==="VERIFIED_CONTROL_BUT_VERIFY"||v==="CURRENT_CONTROL_LINK_VERIFY"||v==="REVIEW_REQUIRED")return "warn";
  if(v==="NOT_CONFIRMED_CLOSED")return "muted";
  return "risk";
 }
@@ -335,23 +336,24 @@ function buildClosureTrace(data){
  S.closureData=data;
  S.closureMap=new Map((data.cases||[]).map(x=>[x.case_id,x]));
  const m=data.meta||{},cc=m.closure_classes||{};
- $("closureStrong").textContent=fmt(cc.SYSTEMIC_CLOSURE_SUPPORTED||0);
- $("closureVerify").textContent=fmt(cc.REGISTERED_CONTROL_BUT_VERIFY||0);
+ $("closureStrong").textContent=fmt(cc.STRONG_CLOSURE_CANDIDATE||0);
+ $("closureVerify").textContent=fmt((cc.VERIFIED_CONTROL_BUT_VERIFY||0)+(cc.CURRENT_CONTROL_LINK_VERIFY||0));
  $("closureWeak").textContent=fmt(cc.WEAK_HUMAN_CONTROL_CLOSURE||0);
  $("closureGap").textContent=fmt(cc.CONTROL_EVIDENCE_GAP||0);
- $("closureTraceSnapshot").textContent=fmt(m.cases||0)+" CAR · "+fmt(m.cases_with_registered_control||0)+" linked to registered control";
- $("wRegistryMeta").textContent=fmt(m.registered_doc_codes||0)+" document codes · "+fmt(m.w_files_scanned||0)+" current files indexed";
+ $("closureTraceSnapshot").textContent=fmt(m.cases||0)+" CAR · "+fmt(m.cases_with_current_control_link||0)+" linked · "+fmt(m.customer_complaint_reference_cases||0)+" complaint reference cases";
+ $("wRegistryMeta").textContent=fmt(m.current_library_doc_codes||0)+" Current Library codes · "+fmt(m.verified_reference_doc_codes||0)+" text-checked/hash references";
  ["closureSearch","closureClassFilter","closureWeakFilter"].forEach(id=>$(id).addEventListener(id==="closureSearch"?"input":"change",applyClosureFilters));
  $("closureClear").addEventListener("click",()=>{$("closureSearch").value="";$("closureClassFilter").value="";$("closureWeakFilter").value="";applyClosureFilters();});
  applyClosureFilters();
 }
 function applyClosureFilters(){
  const q=$("closureSearch").value.trim().toLowerCase(),cl=$("closureClassFilter").value,wk=$("closureWeakFilter").value;
- const priority={WEAK_HUMAN_CONTROL_CLOSURE:0,CONTROL_EVIDENCE_GAP:1,REGISTERED_CONTROL_BUT_VERIFY:2,REVIEW_REQUIRED:3,SYSTEMIC_CLOSURE_SUPPORTED:4,NOT_CONFIRMED_CLOSED:5};
+ const priority={WEAK_HUMAN_CONTROL_CLOSURE:0,CONTROL_EVIDENCE_GAP:1,VERIFIED_CONTROL_BUT_VERIFY:2,CURRENT_CONTROL_LINK_VERIFY:3,REVIEW_REQUIRED:4,STRONG_CLOSURE_CANDIDATE:5,NOT_CONFIRMED_CLOSED:6};
  S.closureFiltered=(S.closureData?.cases||[]).filter(x=>{
   const c=S.cases.find(z=>z.case_id===x.case_id)||{};
-  const docs=(x.registered_controls||[]).map(d=>[d.code,d.title,d.type,d.area].join(" ")).join(" ");
-  const hay=[x.case_id,c.car_number,c.issue_detail,c.requirement,x.rationale,(x.gaps||[]).join(" "),(x.weak_terms||[]).join(" "),docs].join(" ").toLowerCase();
+  const docs=(x.registered_controls||[]).map(d=>[d.code,d.title,d.type,d.area,d.trust_level].join(" ")).join(" ");
+  const cr=x.customer_complaint_reference||{};
+  const hay=[x.case_id,c.car_number,c.issue_detail,c.requirement,x.rationale,(x.gaps||[]).join(" "),(x.weak_terms||[]).join(" "),docs,cr.qmr_level,cr.verified_interpretation,cr.review_required].join(" ").toLowerCase();
   return (!q||hay.includes(q))&&(!cl||x.closure_class===cl)&&(!wk||(x.weak_action_types||[]).includes(wk));
  }).sort((a,b)=>(priority[a.closure_class]??9)-(priority[b.closure_class]??9)||(a.closure_score??0)-(b.closure_score??0));
  renderClosureRows();
@@ -361,12 +363,13 @@ function renderClosureRows(){
  $("closureResultCount").textContent=fmt(rows.length)+" CAR";
  $("closureCaseRows").innerHTML=rows.map(x=>{
   const c=S.cases.find(z=>z.case_id===x.case_id)||{};
-  const controls=(x.registered_controls||[]).slice(0,3).map(d=>'<span class="closure-doc-mini">'+esc(d.code)+'</span>').join("");
+  const controls=(x.registered_controls||[]).slice(0,3).map(d=>'<span class="closure-doc-mini">'+(d.verified_reference?"✓ ":"")+esc(d.code)+'</span>').join("");
   const weak=(x.weak_action_types||[]).slice(0,3).map(t=>'<span class="closure-weak-mini">'+esc(t)+'</span>').join("");
-  return '<button class="closure-row '+(S.closureSelected===x.case_id?"selected":"")+'" data-closure-id="'+esc(x.case_id)+'"><div class="closure-row-top"><div><b>'+esc(x.case_id)+'</b><small>'+esc(c.car_number||c.car_code||"")+'</small></div><span class="closure-badge '+closureClass(x.closure_class)+'">'+esc(closureLabel(x.closure_class))+'</span></div><p>'+esc((c.issue_detail||"ไม่มีรายละเอียดปัญหา").slice(0,150))+'</p><div class="closure-row-foot"><span>Score <b>'+esc(x.closure_score??"—")+'</b></span><span>W Control <b>'+fmt((x.registered_controls||[]).length)+'</b></span><span>'+controls+weak+'</span></div></button>';
+  const complaint=x.customer_complaint_reference?'<span class="closure-complaint-mini">Complaint Ref</span>':"";
+  return '<button class="closure-row '+(S.closureSelected===x.case_id?"selected":"")+'" data-closure-id="'+esc(x.case_id)+'"><div class="closure-row-top"><div><b>'+esc(x.case_id)+'</b><small>'+esc(c.car_number||c.car_code||"")+'</small></div><span class="closure-badge '+closureClass(x.closure_class)+'">'+esc(closureLabel(x.closure_class))+'</span></div><p>'+esc((c.issue_detail||"ไม่มีรายละเอียดปัญหา").slice(0,150))+'</p><div class="closure-row-foot"><span>Score <b>'+esc(x.closure_score??"—")+'</b></span><span>W Link <b>'+fmt((x.registered_controls||[]).length)+'</b></span><span>'+complaint+controls+weak+'</span></div></button>';
  }).join("")||'<div class="nc-detail-empty">ไม่พบ CAR ตามตัวกรอง</div>';
  document.querySelectorAll("[data-closure-id]").forEach(b=>b.addEventListener("click",()=>renderClosureDetail(b.dataset.closureId)));
- if(rows.length&&!S.closureSelected)renderClosureDetail(rows[0].case_id);
+ if(rows.length&&(!S.closureSelected||!rows.some(x=>x.case_id===S.closureSelected)))renderClosureDetail(rows[0].case_id);
 }
 function renderClosureDetail(id){
  const x=S.closureMap.get(id),c=S.cases.find(z=>z.case_id===id);if(!x||!c)return;
@@ -374,16 +377,24 @@ function renderClosureDetail(id){
  document.querySelectorAll("[data-closure-id]").forEach(b=>b.classList.toggle("selected",b.dataset.closureId===id));
  const weak=(x.weak_action_types||[]).map(t=>'<span class="closure-action-tag risk">'+esc(t)+'</span>').join("")||'<span class="closure-action-tag good">ไม่พบ Weak Action signal</span>';
  const ctrls=(x.registered_controls||[]);
- const controlHtml=ctrls.length?ctrls.map(d=>'<div class="registered-control '+(d.announced?"good":"warn")+'"><div><span>'+esc(d.type)+'</span><b>'+esc(d.code)+'</b></div><p>'+esc(d.title)+'</p><small>'+esc(d.area||"Drive W")+' · '+(d.announced?"พบหลักฐานประกาศใช้/ขึ้นทะเบียน":"พบใน Current Library")+' · source: '+esc(d.source)+'</small></div>').join(""):'<div class="control-empty">ไม่พบ WI / FORM / QP ที่เชื่อมจากหลักฐาน CAR ไปยัง Current Registered Library ใน Drive W</div>';
+ const controlHtml=ctrls.length?ctrls.map(d=>{
+   const trust=d.verified_reference?"TEXT-CHECKED + HASHED REFERENCE":"CURRENT LIBRARY CANDIDATE";
+   const trustCls=d.verified_reference?"good":"warn";
+   const release=d.verified_release_label?" · verified release "+d.verified_release_label:"";
+   return '<div class="registered-control '+trustCls+'"><div><span>'+esc(d.type)+'</span><b>'+esc(d.code)+'</b></div><p>'+esc(d.title)+'</p><small>'+esc(d.area||"Drive W")+' · '+esc(trust)+esc(release)+' · link source: '+esc(d.source)+'</small></div>';
+ }).join(""):'<div class="control-empty">ไม่พบ WI / FORM / QP ที่เชื่อมจากหลักฐาน CAR ไปยัง Current Control Library ใน Drive W</div>';
  const gaps=(x.gaps||[]).map(g=>'<li>'+esc(g)+'</li>').join("")||'<li>ไม่พบช่องโหว่สำคัญจาก Rule Screen นี้</li>';
  const verdictCls=closureClass(x.closure_class);
+ const cr=x.customer_complaint_reference;
+ const complaintPanel=cr?'<div class="complaint-reference"><div class="card-title"><b>Customer Complaint Reference Method</b><span>'+esc(cr.complaint_id||"")+" · QMR "+esc(cr.qmr_level||"—")+'</span></div><p><b>Verified interpretation:</b> '+esc(cr.verified_interpretation||"—")+'</p><p><b>QMR must verify:</b> '+esc(cr.review_required||"—")+'</p></div>':"";
  $("closureDetail").innerHTML=
   '<div class="closure-detail-head"><div><span class="eyebrow">CASE TRACE</span><h3>'+esc(id)+' · '+esc(c.car_number||"")+'</h3><p>'+esc(x.rationale||"—")+'</p></div><div class="closure-score '+verdictCls+'"><b>'+esc(x.closure_score??"—")+'</b><small>/100</small></div></div>'+
+  complaintPanel+
   '<div class="closure-path">'+
     '<div class="closure-step"><span>01 · CAR / Problem</span><b>'+esc(c.category||"—")+' · '+esc(c.severity||"—")+'</b><p>'+esc((c.issue_detail||"—").slice(0,260))+'</p></div>'+
     '<div class="closure-step"><span>02 · Action Style</span><b>'+esc((x.weak_action_types||[]).length?"Human-control signal detected":"System-oriented / no weak signal")+'</b><div class="closure-action-tags">'+weak+'</div></div>'+
-    '<div class="closure-step wide"><span>03 · Registered Control · Drive W</span><b>'+fmt(ctrls.length)+' linked document(s)</b><div class="registered-controls">'+controlHtml+'</div></div>'+
-    '<div class="closure-step"><span>04 · Effectiveness</span><b>'+(x.effectiveness_signal?"พบ Effectiveness signal":"ยังไม่พบหลักฐานชัด")+'</b><p>'+(x.effectiveness_signal?"มีข้อความ/หลักฐานเกี่ยวกับการทวนสอบผลหรือการไม่เกิดซ้ำ":"ควรมี Verification period, recurrence check หรือ record หลังใช้มาตรการ")+'</p></div>'+
+    '<div class="closure-step wide"><span>03 · Control Link · Drive W</span><b>'+fmt(ctrls.length)+' linked document(s)</b><div class="registered-controls">'+controlHtml+'</div><p class="control-boundary">Current Library presence does not by itself prove DCC Master List status, CAR-triggered revision, deployment, or effectiveness.</p></div>'+
+    '<div class="closure-step"><span>04 · Deployment / Effectiveness</span><b>'+(x.effectiveness_signal?"พบ Effectiveness signal":"ยังไม่พบหลักฐานชัด")+'</b><p>'+(x.effectiveness_signal?"มีข้อความ/หลักฐานเกี่ยวกับการทวนสอบผลหรือการไม่เกิดซ้ำ — ต้องตรวจ record จริงต่อ":"ต้องมี implementation record, verification period และ recurrence check หลังใช้มาตรการ")+'</p></div>'+
     '<div class="closure-step"><span>05 · QMR Closure Gate</span><b class="'+verdictCls+'">'+esc(closureLabel(x.closure_class))+'</b><p>'+esc(x.rationale||"—")+'</p></div>'+
   '</div>'+
   '<div class="closure-gap-box"><b>ช่องโหว่ที่ QMR ต้องถามกลับ</b><ul>'+gaps+'</ul></div>'+
