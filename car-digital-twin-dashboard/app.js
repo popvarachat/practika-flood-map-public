@@ -1,4 +1,4 @@
-const S={cases:[],filtered:[],page:1,pageSize:25,charts:[],integrity:new Map(),integrityMeta:null,compassMode:"",ncFlow:new Map(),ncFlowData:null,ncSelected:""};
+const S={cases:[],filtered:[],page:1,pageSize:25,charts:[],integrity:new Map(),integrityMeta:null,compassMode:"",ncFlow:new Map(),ncFlowData:null,ncSelected:"",closureData:null,closureMap:new Map(),closureFiltered:[],closureSelected:""};
 const $=id=>document.getElementById(id);
 const esc=s=>String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]));
 const fmt=n=>new Intl.NumberFormat("th-TH").format(n||0);
@@ -313,9 +313,88 @@ function renderTable(){
  $("caseRows").innerHTML=rows.map(c=>{const i=c.integrity||{};return '<tr data-id="'+esc(c.case_id)+'"><td><b>'+esc(c.case_id)+'</b><br><small>'+esc(c.car_code||"")+'</small></td><td>'+esc(c.issue_date||"—")+'</td><td>'+esc(c.receiving_best||"—")+'</td><td>'+esc(c.category||"—")+'</td><td><span class="chip sev-'+esc(c.severity)+'">'+esc(c.severity||"—")+'</span></td><td><span class="chip status-'+esc(c.status)+'">'+esc(c.status)+'</span></td><td><span class="score '+(i.integrity_score>=80?"score-good":i.integrity_score>=60?"score-mid":"score-risk")+'">'+esc(i.integrity_score??"—")+'</span></td><td><span class="audit-chip '+verdictClass(i.verdict)+'">'+esc(verdictLabel(i.verdict))+'</span></td><td>›</td></tr>'}).join("");
  document.querySelectorAll("#caseRows tr").forEach(tr=>tr.addEventListener("click",()=>openCase(tr.dataset.id)));
 }
+
+function closureLabel(v){
+ const m={
+  SYSTEMIC_CLOSURE_SUPPORTED:"Systemic Closure Supported",
+  REGISTERED_CONTROL_BUT_VERIFY:"Registered Control · Verify",
+  WEAK_HUMAN_CONTROL_CLOSURE:"Weak Human Control",
+  CONTROL_EVIDENCE_GAP:"Control Evidence Gap",
+  REVIEW_REQUIRED:"Review Required",
+  NOT_CONFIRMED_CLOSED:"Not Confirmed Closed"
+ };
+ return m[v]||v||"—";
+}
+function closureClass(v){
+ if(v==="SYSTEMIC_CLOSURE_SUPPORTED")return "good";
+ if(v==="REGISTERED_CONTROL_BUT_VERIFY"||v==="REVIEW_REQUIRED")return "warn";
+ if(v==="NOT_CONFIRMED_CLOSED")return "muted";
+ return "risk";
+}
+function buildClosureTrace(data){
+ S.closureData=data;
+ S.closureMap=new Map((data.cases||[]).map(x=>[x.case_id,x]));
+ const m=data.meta||{},cc=m.closure_classes||{};
+ $("closureStrong").textContent=fmt(cc.SYSTEMIC_CLOSURE_SUPPORTED||0);
+ $("closureVerify").textContent=fmt(cc.REGISTERED_CONTROL_BUT_VERIFY||0);
+ $("closureWeak").textContent=fmt(cc.WEAK_HUMAN_CONTROL_CLOSURE||0);
+ $("closureGap").textContent=fmt(cc.CONTROL_EVIDENCE_GAP||0);
+ $("closureTraceSnapshot").textContent=fmt(m.cases||0)+" CAR · "+fmt(m.cases_with_registered_control||0)+" linked to registered control";
+ $("wRegistryMeta").textContent=fmt(m.registered_doc_codes||0)+" document codes · "+fmt(m.w_files_scanned||0)+" current files indexed";
+ ["closureSearch","closureClassFilter","closureWeakFilter"].forEach(id=>$(id).addEventListener(id==="closureSearch"?"input":"change",applyClosureFilters));
+ $("closureClear").addEventListener("click",()=>{$("closureSearch").value="";$("closureClassFilter").value="";$("closureWeakFilter").value="";applyClosureFilters();});
+ applyClosureFilters();
+}
+function applyClosureFilters(){
+ const q=$("closureSearch").value.trim().toLowerCase(),cl=$("closureClassFilter").value,wk=$("closureWeakFilter").value;
+ const priority={WEAK_HUMAN_CONTROL_CLOSURE:0,CONTROL_EVIDENCE_GAP:1,REGISTERED_CONTROL_BUT_VERIFY:2,REVIEW_REQUIRED:3,SYSTEMIC_CLOSURE_SUPPORTED:4,NOT_CONFIRMED_CLOSED:5};
+ S.closureFiltered=(S.closureData?.cases||[]).filter(x=>{
+  const c=S.cases.find(z=>z.case_id===x.case_id)||{};
+  const docs=(x.registered_controls||[]).map(d=>[d.code,d.title,d.type,d.area].join(" ")).join(" ");
+  const hay=[x.case_id,c.car_number,c.issue_detail,c.requirement,x.rationale,(x.gaps||[]).join(" "),(x.weak_terms||[]).join(" "),docs].join(" ").toLowerCase();
+  return (!q||hay.includes(q))&&(!cl||x.closure_class===cl)&&(!wk||(x.weak_action_types||[]).includes(wk));
+ }).sort((a,b)=>(priority[a.closure_class]??9)-(priority[b.closure_class]??9)||(a.closure_score??0)-(b.closure_score??0));
+ renderClosureRows();
+}
+function renderClosureRows(){
+ const rows=S.closureFiltered;
+ $("closureResultCount").textContent=fmt(rows.length)+" CAR";
+ $("closureCaseRows").innerHTML=rows.map(x=>{
+  const c=S.cases.find(z=>z.case_id===x.case_id)||{};
+  const controls=(x.registered_controls||[]).slice(0,3).map(d=>'<span class="closure-doc-mini">'+esc(d.code)+'</span>').join("");
+  const weak=(x.weak_action_types||[]).slice(0,3).map(t=>'<span class="closure-weak-mini">'+esc(t)+'</span>').join("");
+  return '<button class="closure-row '+(S.closureSelected===x.case_id?"selected":"")+'" data-closure-id="'+esc(x.case_id)+'"><div class="closure-row-top"><div><b>'+esc(x.case_id)+'</b><small>'+esc(c.car_number||c.car_code||"")+'</small></div><span class="closure-badge '+closureClass(x.closure_class)+'">'+esc(closureLabel(x.closure_class))+'</span></div><p>'+esc((c.issue_detail||"ไม่มีรายละเอียดปัญหา").slice(0,150))+'</p><div class="closure-row-foot"><span>Score <b>'+esc(x.closure_score??"—")+'</b></span><span>W Control <b>'+fmt((x.registered_controls||[]).length)+'</b></span><span>'+controls+weak+'</span></div></button>';
+ }).join("")||'<div class="nc-detail-empty">ไม่พบ CAR ตามตัวกรอง</div>';
+ document.querySelectorAll("[data-closure-id]").forEach(b=>b.addEventListener("click",()=>renderClosureDetail(b.dataset.closureId)));
+ if(rows.length&&!S.closureSelected)renderClosureDetail(rows[0].case_id);
+}
+function renderClosureDetail(id){
+ const x=S.closureMap.get(id),c=S.cases.find(z=>z.case_id===id);if(!x||!c)return;
+ S.closureSelected=id;
+ document.querySelectorAll("[data-closure-id]").forEach(b=>b.classList.toggle("selected",b.dataset.closureId===id));
+ const weak=(x.weak_action_types||[]).map(t=>'<span class="closure-action-tag risk">'+esc(t)+'</span>').join("")||'<span class="closure-action-tag good">ไม่พบ Weak Action signal</span>';
+ const ctrls=(x.registered_controls||[]);
+ const controlHtml=ctrls.length?ctrls.map(d=>'<div class="registered-control '+(d.announced?"good":"warn")+'"><div><span>'+esc(d.type)+'</span><b>'+esc(d.code)+'</b></div><p>'+esc(d.title)+'</p><small>'+esc(d.area||"Drive W")+' · '+(d.announced?"พบหลักฐานประกาศใช้/ขึ้นทะเบียน":"พบใน Current Library")+' · source: '+esc(d.source)+'</small></div>').join(""):'<div class="control-empty">ไม่พบ WI / FORM / QP ที่เชื่อมจากหลักฐาน CAR ไปยัง Current Registered Library ใน Drive W</div>';
+ const gaps=(x.gaps||[]).map(g=>'<li>'+esc(g)+'</li>').join("")||'<li>ไม่พบช่องโหว่สำคัญจาก Rule Screen นี้</li>';
+ const verdictCls=closureClass(x.closure_class);
+ $("closureDetail").innerHTML=
+  '<div class="closure-detail-head"><div><span class="eyebrow">CASE TRACE</span><h3>'+esc(id)+' · '+esc(c.car_number||"")+'</h3><p>'+esc(x.rationale||"—")+'</p></div><div class="closure-score '+verdictCls+'"><b>'+esc(x.closure_score??"—")+'</b><small>/100</small></div></div>'+
+  '<div class="closure-path">'+
+    '<div class="closure-step"><span>01 · CAR / Problem</span><b>'+esc(c.category||"—")+' · '+esc(c.severity||"—")+'</b><p>'+esc((c.issue_detail||"—").slice(0,260))+'</p></div>'+
+    '<div class="closure-step"><span>02 · Action Style</span><b>'+esc((x.weak_action_types||[]).length?"Human-control signal detected":"System-oriented / no weak signal")+'</b><div class="closure-action-tags">'+weak+'</div></div>'+
+    '<div class="closure-step wide"><span>03 · Registered Control · Drive W</span><b>'+fmt(ctrls.length)+' linked document(s)</b><div class="registered-controls">'+controlHtml+'</div></div>'+
+    '<div class="closure-step"><span>04 · Effectiveness</span><b>'+(x.effectiveness_signal?"พบ Effectiveness signal":"ยังไม่พบหลักฐานชัด")+'</b><p>'+(x.effectiveness_signal?"มีข้อความ/หลักฐานเกี่ยวกับการทวนสอบผลหรือการไม่เกิดซ้ำ":"ควรมี Verification period, recurrence check หรือ record หลังใช้มาตรการ")+'</p></div>'+
+    '<div class="closure-step"><span>05 · QMR Closure Gate</span><b class="'+verdictCls+'">'+esc(closureLabel(x.closure_class))+'</b><p>'+esc(x.rationale||"—")+'</p></div>'+
+  '</div>'+
+  '<div class="closure-gap-box"><b>ช่องโหว่ที่ QMR ต้องถามกลับ</b><ul>'+gaps+'</ul></div>'+
+  '<div class="closure-detail-actions"><button id="closureOpenCase" type="button">เปิด CAR Detail เต็ม</button><button id="closureOpenNC" type="button">ดู NC Flow</button></div>';
+ $("closureOpenCase").addEventListener("click",()=>openCase(id));
+ $("closureOpenNC").addEventListener("click",()=>{renderNCFlowCase(id);document.querySelectorAll(".tab").forEach(t=>t.classList.toggle("active",t.dataset.target==="ncFlow"));$("ncFlow").scrollIntoView({behavior:"smooth",block:"start"});});
+}
+
 function openCase(id){
  const c=S.cases.find(x=>x.case_id===id);if(!c)return;
- const i=c.integrity||{},ncf=S.ncFlow.get(id)||null;
+ const i=c.integrity||{},ncf=S.ncFlow.get(id)||null,closure=S.closureMap.get(id)||null;
  const flags=(c.data_quality_flags||[]).map(x=>'<span class="chip">'+esc(x)+'</span>').join(" ");
  const docs=(c.documents||[]).map(d=>'<div class="doc"><small>'+esc(d.role||"revision")+'<br>'+esc((d.modified||"").slice(0,10))+'</small><div>'+esc(d.title||"Document revision")+'</div></div>').join("");
  let h='<div class="detail-head"><span class="eyebrow">CASE TWIN</span><h2>'+esc(c.case_id)+'</h2><div class="detail-meta"><span class="chip sev-'+esc(c.severity)+'">'+esc(c.severity||"—")+'</span><span class="chip">'+esc(c.category||"—")+'</span><span class="chip status-'+esc(c.status)+'">'+esc(c.status)+'</span></div></div>';
@@ -328,10 +407,15 @@ function openCase(id){
  if(ncf){
   h+='<div class="detail-section"><h4>NC Flow · Process Failure Map</h4><div class="mini-nc-grid">'+ncf.stages.map(s=>'<div class="mini-nc '+esc(s.status)+'"><b>'+esc(s.title)+'</b><small>'+esc(ncStatusLabel(s.status))+'</small><p>'+esc(s.finding)+'</p></div>').join("")+'</div><div class="audit-verdict '+ncDecisionClass(ncf.qmr_decision)+'"><b>'+esc(ncDecisionLabel(ncf.qmr_decision))+'</b><span>'+esc(ncf.chain_summary)+'</span></div></div>';
  }
+ if(closure){
+  const ctl=(closure.registered_controls||[]).map(d=>'<span class="chip">'+esc(d.type+" "+d.code)+'</span>').join(" ");
+  const wh=(closure.weak_action_types||[]).map(t=>'<span class="chip">'+esc(t)+'</span>').join(" ");
+  h+='<div class="detail-section"><h4>Closure Trace · Registered Control</h4><div class="audit-verdict '+closureClass(closure.closure_class)+'"><b>'+esc(closureLabel(closure.closure_class))+'</b><span>Score '+esc(closure.closure_score??"—")+'/100</span></div><div class="detail-text">'+esc(closure.rationale||"—")+'</div>'+(ctl?'<div class="weak-box"><b>Drive W:</b> '+ctl+'</div>':'')+(wh?'<div class="weak-box"><b>Weak action signal:</b> '+wh+'</div>':'')+'</div>';
+ }
  if(flags)h+='<div class="detail-section"><h4>Data Quality Flags</h4><div>'+flags+'</div></div>';
  h+='<div class="detail-section"><h4>Document Twin · Revision Timeline</h4><div class="timeline">'+(docs||"<div class='detail-text'>ไม่มี revision metadata</div>")+'</div></div><div class="public-note">Public-safe view: ลิงก์ Google Drive, File ID, raw form fields และข้อมูลระบุตัวตนถูกซ่อน การตรวจหลักฐานต้นฉบับเต็มรูปแบบต้องใช้ Internal/Admin view</div>';
  $("caseDetail").innerHTML=h;$("modal").classList.add("open");$("modal").setAttribute("aria-hidden","false");
 }
 function initModal(){document.querySelectorAll("[data-close]").forEach(x=>x.addEventListener("click",()=>{$("modal").classList.remove("open");$("modal").setAttribute("aria-hidden","true");}));document.addEventListener("keydown",e=>{if(e.key==="Escape")$("modal").classList.remove("open");});}
-async function boot(){try{const [res,ires,nres]=await Promise.all([fetch("./cases-public.json",{cache:"no-store"}),fetch("./car-integrity-public.json",{cache:"no-store"}),fetch("./car-nc-flow-public.json",{cache:"no-store"})]);if(!res.ok)throw new Error("Case data "+res.status);if(!ires.ok)throw new Error("Integrity data "+ires.status);if(!nres.ok)throw new Error("NC Flow data "+nres.status);const data=await res.json(),integ=await ires.json(),nc=await nres.json();S.integrityMeta=integ.meta;S.integrity=new Map(integ.cases.map(x=>[x.case_id,x]));S.cases=data.cases.map(c=>({...c,integrity:S.integrity.get(c.case_id)||null}));initTabs();buildCompass(integ);buildNCFlow(nc);buildExecutive(data.meta);buildIntegrity(integ);buildAnalysis();initExplorer();initModal();}catch(e){document.body.innerHTML='<div style="padding:40px;color:white;font-family:sans-serif"><h2>QMR Compass · CAR Digital Twin</h2><p>โหลดข้อมูลไม่สำเร็จ: '+esc(e.message)+'</p></div>';}}
+async function boot(){try{const [res,ires,nres,cres]=await Promise.all([fetch("./cases-public.json",{cache:"no-store"}),fetch("./car-integrity-public.json",{cache:"no-store"}),fetch("./car-nc-flow-public.json",{cache:"no-store"}),fetch("./car-closure-evidence-public.json",{cache:"no-store"})]);if(!res.ok)throw new Error("Case data "+res.status);if(!ires.ok)throw new Error("Integrity data "+ires.status);if(!nres.ok)throw new Error("NC Flow data "+nres.status);if(!cres.ok)throw new Error("Closure Trace data "+cres.status);const data=await res.json(),integ=await ires.json(),nc=await nres.json(),closure=await cres.json();S.integrityMeta=integ.meta;S.integrity=new Map(integ.cases.map(x=>[x.case_id,x]));S.cases=data.cases.map(c=>({...c,integrity:S.integrity.get(c.case_id)||null}));initTabs();buildCompass(integ);buildNCFlow(nc);buildClosureTrace(closure);buildExecutive(data.meta);buildIntegrity(integ);buildAnalysis();initExplorer();initModal();}catch(e){document.body.innerHTML='<div style="padding:40px;color:white;font-family:sans-serif"><h2>QMR Compass · CAR Digital Twin</h2><p>โหลดข้อมูลไม่สำเร็จ: '+esc(e.message)+'</p></div>';}}
 boot();
